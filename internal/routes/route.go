@@ -12,18 +12,21 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
-	userRepo := repository.NewUserRepository(db)
+	api := r.Group("/api/v1")
 
+	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
+	RegisterUserRoutes(api, userHandler)
 
 	lottoService := service.NewLotteryService(userRepo)
 	lottoHandler := handler.NewLotteryHandler(lottoService)
-
-	api := r.Group("/api/v1")
-
-	RegisterUserRoutes(api, userHandler)
 	RegisterLotteryRoutes(api, lottoHandler)
+
+	gameTypeRepo := repository.NewGameTypeRepository(db)
+	gameTypeService := service.NewGameTypeService(gameTypeRepo)
+	gameTypeHandler := handler.NewGameTypeHandler(gameTypeService)
+	RegisterGameTypeRoutes(api, gameTypeHandler)
 
 	return r
 }

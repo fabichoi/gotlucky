@@ -15,7 +15,13 @@ func main() {
 		panic("DB 연결 실패")
 	}
 
-	db.AutoMigrate(&model.User{}, &model.LotteryResult{})
+	db.AutoMigrate(
+		&model.User{},
+		&model.LotteryResult{},
+		&model.GameType{},
+		&model.GameSession{},
+		&model.GameParticipant{},
+	)
 
 	if err := util.SeedUsers(db); err != nil {
 		panic("Init Failed: " + err.Error())
