@@ -28,5 +28,10 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	gameTypeHandler := handler.NewGameTypeHandler(gameTypeService)
 	RegisterGameTypeRoutes(api, gameTypeHandler)
 
+	gameSessionRepo := repository.NewGameSessionRepository(db)
+	gameSessionService := service.NewGameSessionService(gameSessionRepo)
+	gameSessionHandler := handler.NewGameSessionHandler(gameSessionService)
+	RegisterGameSessionRoutes(api, gameSessionHandler)
+
 	return r
 }
