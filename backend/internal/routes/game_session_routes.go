@@ -10,4 +10,5 @@ func RegisterGameSessionRoutes(rg *gin.RouterGroup, h *handler.GameSessionHandle
 	rg.POST("/games/sessions", h.CreateGameSession)
 	rg.GET("/games/sessions", h.ListGameSessions)
 	rg.GET("/games/sessions/:id", h.GetGameSession)
+	rg.DELETE("/games/sessions/:id", h.DeleteGameSession)
 }

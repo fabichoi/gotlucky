@@ -73,3 +73,12 @@ func (h *GameSessionHandler) GetGameSession(c *gin.Context) {
 
 	c.JSON(http.StatusOK, session)
 }
+
+func (h *GameSessionHandler) DeleteGameSession(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.Service.DeleteGameSessionByID(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

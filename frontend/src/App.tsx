@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import Home from "./pages/Home";
+import Policy from "./pages/Policy";
 import Results from "./pages/Results";
 import SubmitResults from "./pages/SubmitResults";
 import ManageGames from "./pages/ManageGames";
@@ -28,6 +29,9 @@ function App() {
             🎯 게임
           </Link>
           <div className="navbar-nav flex-row gap-2">
+            <Link className="nav-link text-white px-2" to="/policy">
+              ⚖️ 정책
+            </Link>
             {isAdmin && (
               <Link className="nav-link text-white px-2" to="/user?admin">
                 👤 유저 관리
@@ -53,6 +57,7 @@ function App() {
       </nav>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/policy" element={<Policy />} />
         {isAdmin && <Route path="/user" element={<ManageUsers />} />}
         {isAdmin && <Route path="/submit" element={<SubmitResults />} />}
         {isAdmin && <Route path="/manage" element={<ManageGames />} />}

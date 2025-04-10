@@ -24,3 +24,7 @@ func (s *GameSessionService) GetAllGameSessions() ([]model.GameSession, error) {
 func (s *GameSessionService) GetGameSessionByID(id uint) (*model.GameSession, error) {
 	return s.repo.FindByID(id)
 }
+
+func (s *GameSessionService) DeleteGameSessionByID(id string) error {
+	return s.repo.DeleteGameSessionByID(id)
+}

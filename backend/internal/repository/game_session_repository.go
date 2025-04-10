@@ -29,3 +29,7 @@ func (r *GameSessionRepository) FindByID(id uint) (*model.GameSession, error) {
 	err := r.db.Preload("GameType").First(&session, id).Error
 	return &session, err
 }
+
+func (r *GameSessionRepository) DeleteGameSessionByID(id string) error {
+	return r.db.Delete(&model.GameSession{}, id).Error
+}

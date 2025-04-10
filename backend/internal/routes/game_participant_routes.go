@@ -11,4 +11,5 @@ func RegisterParticipantRoutes(rg *gin.RouterGroup, h *handler.GameParticipantHa
 	rg.GET("/games/:id/participants", h.GetParticipants)
 	rg.GET("/games/:id/participants/:p_id", h.GetParticipant)
 	rg.POST("/games/:id/results", h.SetResult)
+	rg.GET("/games/:id/results", h.GetResult)
 }

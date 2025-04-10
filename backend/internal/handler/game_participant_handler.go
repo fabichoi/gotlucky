@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"gotlucky/internal/dto"
 	"gotlucky/internal/model"
 	"gotlucky/internal/service"
 
@@ -62,16 +63,37 @@ func (h *GameParticipantHandler) GetParticipant(c *gin.Context) {
 func (h *GameParticipantHandler) SetResult(c *gin.Context) {
 	sessionID, _ := strconv.Atoi(c.Param("id"))
 
-	var input map[uint]int // 예: {1: 1, 3: 2, 5: 3}
-	if err := c.ShouldBindJSON(&input); err != nil {
+	var inputs []dto.GameResultInput
+	if err := c.ShouldBindJSON(&inputs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.Service.SetRanks(uint(sessionID), input); err != nil {
+	if err := h.Service.SetRanks(uint(sessionID), inputs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ranking updated"})
+}
+
+func (h *GameParticipantHandler) GetResult(c *gin.Context) {
+	sessionID, _ := strconv.Atoi(c.Param("id"))
+
+	session, err := h.Service.GetSessionWithResult(uint(sessionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	participants, err := h.Service.GetParticipants(uint(sessionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"game":         session,
+		"participants": participants,
+	})
 }
