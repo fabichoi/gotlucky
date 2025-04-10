@@ -14,11 +14,10 @@ type GameSession struct {
 	GameType   GameType  `gorm:"foreignKey:GameTypeID" json:"game_type"`
 }
 
-type GameParticipant struct {
+type GameResult struct {
 	ID            uint `gorm:"primaryKey" json:"id"`
 	GameSessionID uint `gorm:"index:idx_game_rank" json:"game_session_id"`
 	UserID        uint `json:"user_id"`
-	PointsUsed    int  `json:"points_used"`
 	PointsEarned  int  `json:"points_earned"`
 	Rank          *int `gorm:"index:idx_game_rank,unique" json:"rank,omitempty"`
 }

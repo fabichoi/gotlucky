@@ -19,7 +19,7 @@ func main() {
 		&model.LotteryResult{},
 		&model.GameType{},
 		&model.GameSession{},
-		&model.GameParticipant{},
+		&model.GameResult{},
 	)
 
 	// if err := util.SeedUsers(db); err != nil {
