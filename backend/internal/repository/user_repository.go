@@ -31,3 +31,28 @@ func (r *UserRepository) SaveResult(result *model.LotteryResult) error {
 func (r *UserRepository) CreateUser(user *model.User) error {
 	return r.db.Create(user).Error
 }
+
+func (r *UserRepository) GetAllUsers() ([]model.User, error) {
+	var users []model.User
+	err := r.db.Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepository) DeleteUserByID(id string) error {
+	return r.db.Delete(&model.User{}, id).Error
+}
+
+func (r *UserRepository) UpdateUserByID(id string, updated *model.User) (*model.User, error) {
+	var user model.User
+	if err := r.db.First(&user, id).Error; err != nil {
+		return nil, err
+	}
+
+	user.Name = updated.Name
+	// 필요한 필드 추가 업데이트 가능
+
+	if err := r.db.Save(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

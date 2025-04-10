@@ -3,9 +3,9 @@ package model
 import "time"
 
 type User struct {
-	ID     uint `gorm:"primaryKey"`
-	Name   string
-	Points int
+	ID     uint   `gorm:"primaryKey" json:"id"`
+	Name   string `json:"name"`
+	Points int    `json:"points"`
 }
 
 type LotteryResult struct {

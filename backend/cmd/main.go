@@ -3,7 +3,6 @@ package main
 import (
 	"gotlucky/internal/model"
 	"gotlucky/internal/routes"
-	"gotlucky/internal/util"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -15,11 +14,17 @@ func main() {
 		panic("DB 연결 실패")
 	}
 
-	db.AutoMigrate(&model.User{}, &model.LotteryResult{})
+	db.AutoMigrate(
+		&model.User{},
+		&model.LotteryResult{},
+		&model.GameType{},
+		&model.GameSession{},
+		&model.GameParticipant{},
+	)
 
-	if err := util.SeedUsers(db); err != nil {
-		panic("Init Failed: " + err.Error())
-	}
+	// if err := util.SeedUsers(db); err != nil {
+	// 	panic("Init Failed: " + err.Error())
+	// }
 
 	r := routes.SetupRouter(db)
 	r.Run(":8080")

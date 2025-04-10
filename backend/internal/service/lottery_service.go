@@ -19,11 +19,11 @@ func NewLotteryService(repo *repository.UserRepository) *LotteryService {
 func (s *LotteryService) Play(userID uint) (*model.LotteryResult, error) {
 	user, err := s.repo.GetUserById(userID)
 	if err != nil {
-		return nil, errors.New("User is not existed")
+		return nil, errors.New("user is not existed")
 	}
 
 	if user.Points < 10 {
-		return nil, errors.New("Point is not enough")
+		return nil, errors.New("point is not enough")
 	}
 
 	rand.Seed(time.Now().UnixNano())
