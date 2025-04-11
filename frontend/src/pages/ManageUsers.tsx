@@ -56,7 +56,7 @@ export default function ManageUsers() {
   const handleUpdate = async () => {
     if (editUserId === null || !editUserName) return;
     try {
-      const res = updateUser(editUserId, editUserName);
+      updateUser(editUserId, editUserName);
       setMessage("유저가 수정되었습니다.");
       setEditUserId(null);
       setEditUserName("");
