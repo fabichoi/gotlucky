@@ -2,7 +2,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function fetchUsers() {
-  const res = await fetch(`${API_BASE_URL}/api/v1/users`);
+  const res = await fetch(`${API_BASE_URL}/v1/users`);
   if (!res.ok) {
     throw new Error("유저 불러오기 실패");
   }
@@ -10,7 +10,7 @@ export async function fetchUsers() {
 }
 
 export async function createUser(name: string) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/users`, {
+  const res = await fetch(`${API_BASE_URL}/v1/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: name }),
@@ -22,7 +22,7 @@ export async function createUser(name: string) {
 }
 
 export async function deleteUser(id: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/users/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/v1/users/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) {
@@ -31,7 +31,7 @@ export async function deleteUser(id: number) {
 }
 
 export async function updateUser(id: number, name: string) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/types/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/types/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -43,12 +43,12 @@ export async function updateUser(id: number, name: string) {
 }
 
 export async function fetchGameTypes() {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/types`);
+  const res = await fetch(`${API_BASE_URL}/v1/games/types`);
   return res.json();
 }
 
 export async function createGameType(name: string) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/types`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/types`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -59,7 +59,7 @@ export async function createGameType(name: string) {
 }
 
 export async function deleteGameType(id: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/types/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/types/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) {
@@ -68,7 +68,7 @@ export async function deleteGameType(id: number) {
 }
 
 export async function updateGameType(id: number, name: string) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/types/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/types/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -79,12 +79,12 @@ export async function updateGameType(id: number, name: string) {
 }
 
 export async function fetchGameSessions() {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/sessions`);
+  const res = await fetch(`${API_BASE_URL}/v1/games/sessions`);
   return res.json();
 }
 
 export async function createGameSession(date: string, game_type_id: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/sessions`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -95,7 +95,7 @@ export async function createGameSession(date: string, game_type_id: number) {
 }
 
 export async function deleteGameSession(id: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/sessions/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/sessions/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) {
@@ -104,7 +104,7 @@ export async function deleteGameSession(id: number) {
 }
 
 export async function updateGameSession(date: string, game_type_id: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/sessions`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/sessions`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export async function updateGameSession(date: string, game_type_id: number) {
 }
 
 export async function fetchGameResult(sessionId: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/${sessionId}/results`);
+  const res = await fetch(`${API_BASE_URL}/v1/games/${sessionId}/results`);
   return res.json();
 }
 
@@ -123,7 +123,7 @@ export async function submitGameResults(
   sessionId: number,
   payload: { user_id: number; rank: number; points_earned: number }[]
 ) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/games/${sessionId}/results`, {
+  const res = await fetch(`${API_BASE_URL}/v1/games/${sessionId}/results`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
