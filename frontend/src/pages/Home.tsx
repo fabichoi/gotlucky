@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { fetchGameSessions } from "../api/gameApi";
 
 interface GameSession {
   id: number;
@@ -15,8 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/games/sessions")
-      .then((res) => res.json())
+    fetchGameSessions()
       .then((data) => {
         setSessions(data);
         setLoading(false);
@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">📊 게임 결과 목록</h1>
+      <h1 className="mb-4">📊 전체 결과 목록</h1>
       <ul className="list-group">
         {sessions.map((session) => (
           <li

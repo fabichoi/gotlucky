@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { fetchGameResult } from "../api/gameApi";
 
 interface GameType {
   id: number;
@@ -37,12 +38,11 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/games/${id}/results`)
-      .then((res) => res.json())
-      .then((data) => {
-        setResult(data);
-        setLoading(false);
-      });
+    if (!id) return;
+    fetchGameResult(parseInt(id)).then((data) => {
+      setResult(data);
+      setLoading(false);
+    });
   }, [id]);
 
   if (loading) return <div className="container py-4">로딩 중...</div>;

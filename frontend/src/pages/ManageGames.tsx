@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  createGameSession,
+  deleteGameSession,
+  fetchGameSessions,
+  fetchGameTypes,
+  updateGameSession,
+} from "../api/gameApi";
 
 interface GameType {
   id: number;
@@ -22,38 +29,33 @@ export default function ManageGames() {
   const [editGameTypeId, setEditGameTypeId] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/games/types")
-      .then((res) => res.json())
-      .then((data) => setTypes(data));
+    fetchGameTypes().then((data) => setTypes(data));
 
-    fetch("http://localhost:8080/api/v1/games/sessions")
-      .then((res) => res.json())
-      .then((data) => setSessions(data));
+    fetchGameSessions().then((data) => setSessions(data));
   }, []);
 
   const handleCreate = async () => {
-    const res = await fetch("http://localhost:8080/api/v1/games/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: newDate,
-        game_type_id: parseInt(newGameTypeId),
-      }),
-    });
-    if (res.ok) {
-      const newSession = await res.json();
+    try {
+      const newSession = await createGameSession(
+        newDate,
+        parseInt(newGameTypeId)
+      );
       setSessions([...sessions, newSession]);
       setNewDate("");
       setNewGameTypeId("");
+    } catch (err) {
+      console.error("세션 생성 실패:", err);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    await fetch(`http://localhost:8080/api/v1/games/sessions/${id}`, {
-      method: "DELETE",
-    });
-    setSessions(sessions.filter((s) => s.id !== id));
+    try {
+      await deleteGameSession(id);
+      setSessions(sessions.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error("세션 삭제 실패:", err);
+    }
   };
 
   const handleEdit = (s: GameSession) => {
@@ -64,23 +66,15 @@ export default function ManageGames() {
 
   const handleUpdate = async () => {
     if (!editId || !editDate || !editGameTypeId) return;
-    const res = await fetch(
-      `http://localhost:8080/api/v1/games/sessions/${editId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: editDate,
-          game_type_id: parseInt(editGameTypeId),
-        }),
-      }
-    );
-    if (res.ok) {
-      const updated = await res.json();
+
+    try {
+      const updated = await updateGameSession(newDate, parseInt(newGameTypeId));
       setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
       setEditId(null);
       setEditDate("");
       setEditGameTypeId("");
+    } catch (err) {
+      console.error("세션 생성 실패:", err);
     }
   };
 

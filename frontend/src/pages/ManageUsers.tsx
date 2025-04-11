@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createUser, deleteUser, fetchUsers, updateUser } from "../api/gameApi";
 
 interface User {
   id: number;
@@ -14,10 +15,8 @@ export default function ManageUsers() {
 
   const loadUsers = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/users");
-      if (!res.ok) throw new Error("유저 불러오기 실패");
-      const data = await res.json();
-      setUsers(data);
+      const users = await fetchUsers();
+      setUsers(users);
     } catch (err) {
       console.error(err);
       setMessage("유저 목록을 불러오는 중 오류 발생");
@@ -27,12 +26,7 @@ export default function ManageUsers() {
   const handleAdd = async () => {
     if (!newName) return;
     try {
-      const res = await fetch("http://localhost:8080/api/v1/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName }),
-      });
-      if (!res.ok) throw new Error("유저 추가 실패");
+      await createUser(newName);
       setNewName("");
       setMessage("유저가 추가되었습니다.");
       loadUsers();
@@ -45,10 +39,7 @@ export default function ManageUsers() {
   const handleDelete = async (id: number) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/users/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("삭제 실패");
+      await deleteUser(id);
       setMessage("유저가 삭제되었습니다.");
       loadUsers();
     } catch (err) {
@@ -65,15 +56,7 @@ export default function ManageUsers() {
   const handleUpdate = async () => {
     if (editUserId === null || !editUserName) return;
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/v1/users/${editUserId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: editUserName }),
-        }
-      );
-      if (!res.ok) throw new Error("수정 실패");
+      const res = updateUser(editUserId, editUserName);
       setMessage("유저가 수정되었습니다.");
       setEditUserId(null);
       setEditUserName("");
