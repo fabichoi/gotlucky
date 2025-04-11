@@ -15,7 +15,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 	r.Use(cors.Default())
 
-	api := r.Group("/api/v1")
+	api := r.Group("/v1")
 
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
