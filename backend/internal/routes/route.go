@@ -37,7 +37,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	RegisterGameSessionRoutes(api, gameSessionHandler)
 
 	gameResultRepo := repository.NewGameResultRepository(db)
-	gameResultService := service.NewGameResultService(gameResultRepo)
+	gameResultService := service.NewGameResultService(gameResultRepo, gameSessionRepo)
 	gameResultHandler := handler.NewGameResultHandler(gameResultService)
 	RegisterGameResultRoutes(api, gameResultHandler)
 

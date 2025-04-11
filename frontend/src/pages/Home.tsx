@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">📊 전체 결과 목록</h1>
+      <h1 className="mb-4">📊 게임 결과 목록</h1>
       <ul className="list-group">
         {sessions.map((session) => (
           <li

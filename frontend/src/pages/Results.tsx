@@ -1,26 +1,34 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-interface Participant {
+interface GameType {
   id: number;
-  user_id: number;
-  points_used: number;
-  points_earned: number;
-  rank?: number;
+  name: string;
 }
 
-interface Session {
+interface GameInfo {
   id: number;
   date: string;
-  game_type: {
-    id: number;
-    name: string;
-  };
+  name: string;
+  game_type: GameType;
+}
+
+interface User {
+  id: number;
+  name: string;
+  points: number;
+}
+
+interface GameResult {
+  id: number;
+  user: User;
+  points_earned: number;
+  rank: number;
 }
 
 interface GameResultResponse {
-  game: Session;
-  participants: Participant[];
+  game: GameInfo;
+  results: GameResult[];
 }
 
 export default function Results() {
@@ -43,44 +51,48 @@ export default function Results() {
 
   return (
     <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">🏆 {result.game.game_type.name} 결과</h1>
-      <p className="text-muted">
-        {result.game.date.slice(0, 10)} / 세션 ID: {result.game.id}
-      </p>
+      <h1 className="mb-4">
+        🏆 {result.game.date.slice(0, 10)} 게임 결과 (
+        {result.game.game_type.name})
+      </h1>
 
-      <h5 className="mt-4">🥇 상위 랭커</h5>
-      <ul className="list-group mb-4">
-        {result.participants
-          .filter((p) => p.rank && p.rank <= 3)
-          .sort((a, b) => (a.rank || 0) - (b.rank || 0))
-          .map((p) => (
-            <li key={p.id} className="list-group-item">
-              {p.rank}등 - User {p.user_id} / 획득: {p.points_earned}점
-            </li>
-          ))}
-      </ul>
+      <div key={result.game.name} className="mb-5 border rounded p-3 shadow-sm">
+        <h3 className="mb-2">{result.game.name}</h3>
+        <p className="text-muted">
+          {result.game.date.slice(0, 10)} / 세션 ID: {result.game.id}
+        </p>
 
-      <h5 className="mt-4">👥 전체 참가자</h5>
-      <table className="table table-bordered">
-        <thead className="table-light">
-          <tr>
-            <th>User ID</th>
-            <th>사용 포인트</th>
-            <th>획득 포인트</th>
-            <th>순위</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.participants.map((p) => (
-            <tr key={p.id}>
-              <td>{p.user_id}</td>
-              <td>{p.points_used}</td>
-              <td>{p.points_earned}</td>
-              <td>{p.rank || "-"}</td>
+        <h6 className="mt-3">🥇 상위 랭커</h6>
+        <ul className="list-group mb-3">
+          {result.results
+            .filter((u) => u.rank && u.rank <= 3)
+            .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+            .map((u) => (
+              <li key={u.id} className="list-group-item">
+                {u.rank}등 - {u.user.name} / 획득: {u.points_earned}점
+              </li>
+            ))}
+        </ul>
+
+        <table className="table table-sm table-bordered">
+          <thead className="table-light">
+            <tr>
+              <th>유저</th>
+              <th>획득 포인트</th>
+              <th>순위</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {result.results.map((p) => (
+              <tr key={p.id}>
+                <td>{p.user.name}</td>
+                <td>{p.points_earned}</td>
+                <td>{p.rank || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

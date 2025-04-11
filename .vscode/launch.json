@@ -9,6 +9,13 @@
       "program": "${workspaceFolder}/backend/cmd/main.go",
       "env": {},
       "args": []
+    },
+    {
+      "name": "Chrome: 프론트 디버깅",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src"
     }
   ]
 }

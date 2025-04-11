@@ -6,15 +6,20 @@ import (
 )
 
 type GameResultService struct {
-	repo *repository.GameResultRepository
+	repo        *repository.GameResultRepository
+	sessionRepo *repository.GameSessionRepository
 }
 
-func NewGameResultService(r *repository.GameResultRepository) *GameResultService {
-	return &GameResultService{repo: r}
+func NewGameResultService(r *repository.GameResultRepository, s *repository.GameSessionRepository) *GameResultService {
+	return &GameResultService{repo: r, sessionRepo: s}
 }
 
 func (s *GameResultService) AddGameResult(p []*model.GameResult) error {
 	return s.repo.CreateMany(p)
+}
+
+func (s *GameResultService) GetGameSession(id uint) (*model.GameSession, error) {
+	return s.sessionRepo.FindByID(id)
 }
 
 func (s *GameResultService) GetGameResultsBySession(sessionID uint) ([]model.GameResult, error) {

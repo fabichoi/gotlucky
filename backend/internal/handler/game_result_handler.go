@@ -49,12 +49,23 @@ func (h *GameResultHandler) AddGameResult(c *gin.Context) {
 
 func (h *GameResultHandler) GetGameResults(c *gin.Context) {
 	sessionID, _ := strconv.Atoi(c.Param("id"))
+
+	session, err := h.Service.GetGameSession(uint(sessionID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	gameResults, err := h.Service.GetGameResultsBySession(uint(sessionID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gameResults)
+
+	c.JSON(http.StatusOK, gin.H{
+		"game":    session,
+		"results": gameResults,
+	})
 }
 
 func (h *GameResultHandler) GetGameResult(c *gin.Context) {

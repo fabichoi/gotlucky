@@ -90,7 +90,7 @@ export default function ManageUsers() {
 
   return (
     <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">👤 유저 관리</h1>
+      <h1 className="mb-4">👤 유저 관리 (관리자 전용)</h1>
 
       <div className="mb-3">
         <input
