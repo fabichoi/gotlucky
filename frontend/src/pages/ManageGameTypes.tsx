@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import {
+  createGameType,
+  deleteGameType,
+  fetchGameTypes,
+  updateGameType,
+} from "../api/gameApi";
 
 interface GameType {
   id: number;
@@ -12,31 +18,29 @@ export default function ManageGameTypes() {
   const [editName, setEditName] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/games/types")
-      .then((res) => res.json())
+    fetchGameTypes()
       .then((data) => setTypes(data));
   }, []);
 
   const handleCreate = async () => {
     if (!newTypeName) return;
-    const res = await fetch("http://localhost:8080/api/v1/games/types", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newTypeName }),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setTypes([...types, created]);
+    try {
+      const newGameType = await createGameType(newTypeName);
+      setTypes([...types, newGameType]);
       setNewTypeName("");
+    } catch (err) {
+      console.error("게임 타입 생성 실패:", err);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    await fetch(`http://localhost:8080/api/v1/games/types/${id}`, {
-      method: "DELETE",
-    });
-    setTypes(types.filter((t) => t.id !== id));
+    try {
+      await deleteGameType(id);
+      setTypes(types.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("세션 삭제 실패:", err);
+    }
   };
 
   const handleEdit = (t: GameType) => {
@@ -46,19 +50,13 @@ export default function ManageGameTypes() {
 
   const handleUpdate = async () => {
     if (!editId || !editName) return;
-    const res = await fetch(
-      `http://localhost:8080/api/v1/games/types/${editId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName }),
-      }
-    );
-    if (res.ok) {
-      const updated = await res.json();
+    try {
+      const updated = await updateGameType(editId, editName);
       setTypes(types.map((t) => (t.id === updated.id ? updated : t)));
       setEditId(null);
       setEditName("");
+    } catch (err) {
+      console.log("게임 타입 수정 실패");
     }
   };
 

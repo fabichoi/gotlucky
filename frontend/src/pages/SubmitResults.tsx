@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { submitGameResults } from "../api/gameApi";
+import {
+  fetchGameSessions,
+  fetchUsers,
+  submitGameResults,
+} from "../api/gameApi";
 
 interface Session {
   id: number;
@@ -7,7 +11,7 @@ interface Session {
   game_type: {
     id: number;
     name: string;
-  }
+  };
 }
 
 interface User {
@@ -25,13 +29,8 @@ export default function SubmitResults() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/games/sessions")
-      .then((res) => res.json())
-      .then((data) => setSessions(data));
-
-    fetch("http://localhost:8080/api/v1/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data));
+    fetchGameSessions().then((data) => setSessions(data));
+    fetchUsers().then((data) => setUsers(data));
   }, []);
 
   const calculatePoints = (rank: number, total: number): number => {
@@ -87,7 +86,8 @@ export default function SubmitResults() {
         <option value="">세션을 선택하세요</option>
         {sessions.map((s) => (
           <option key={s.id} value={s.id}>
-            {s.date.slice(0, 10)} (ID: {s.id}) - {s.game_type?.name || "No Name"}
+            {s.date.slice(0, 10)} (ID: {s.id}) -{" "}
+            {s.game_type?.name || "No Name"}
           </option>
         ))}
       </select>
