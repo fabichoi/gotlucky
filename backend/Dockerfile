@@ -16,7 +16,7 @@ RUN apt-get update \
 
 ENV PATH="/usr/local/go/bin:$PATH"
 
-WORKDIR /gotlucky
+WORKDIR /backend
 
 COPY . .
 
