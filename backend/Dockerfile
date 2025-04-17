@@ -16,13 +16,11 @@ RUN apt-get update \
 
 ENV PATH="/usr/local/go/bin:$PATH"
 
-WORKDIR /backend
+WORKDIR /gotlucky
 
 COPY . .
 
-RUN ls -al
-
-RUN pwd
+RUN cd backend
 
 RUN go mod download
 
