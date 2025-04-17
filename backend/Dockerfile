@@ -18,13 +18,7 @@ ENV PATH="/usr/local/go/bin:$PATH"
 
 WORKDIR /gotlucky
 
-COPY . .
-
-RUN cd backend
-
-RUN ls -al
-
-RUN pwd
+COPY ./backend .
 
 RUN go mod download
 
