@@ -22,7 +22,7 @@ COPY ./backend .
 
 RUN go mod download
 
-RUN go build -o server .
+RUN go build -o server ./cmd/main.go
 
 EXPOSE 8080
 
