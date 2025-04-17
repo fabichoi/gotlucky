@@ -22,6 +22,10 @@ COPY . .
 
 RUN cd backend
 
+RUN ls -al
+
+RUN pwd
+
 RUN go mod download
 
 RUN go build -o server .
