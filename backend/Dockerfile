@@ -20,6 +20,10 @@ WORKDIR /backend
 
 COPY . .
 
+RUN ls -al
+
+RUN pwd
+
 RUN go mod download
 
 RUN go build -o server .
