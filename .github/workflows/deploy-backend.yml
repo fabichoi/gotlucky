@@ -40,7 +40,7 @@ jobs:
           script: |
             set -e
             # pull latest
-            docker pull ${{ steps.login-ecr.outputs.registry }}}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
             # stop & remove old
             docker rm -f gotlucky || true
             # run new
@@ -48,4 +48,4 @@ jobs:
               --name gotlucky \
               -p 8080:8080 \
               --restart unless-stopped \
-              ${{ steps.login-ecr.outputs.registry }}}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+              ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
