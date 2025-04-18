@@ -21,6 +21,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: false
 
       - name: Build, Tag & Push Docker image
         env:
@@ -42,7 +44,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           script: |
-            set -e
+            set -euxo pipefail
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky || true
@@ -51,3 +53,5 @@ jobs:
               -p 8080:8080 \
               --restart unless-stopped \
               $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+
+            docker logs gotlucky
