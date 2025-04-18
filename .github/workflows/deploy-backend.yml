@@ -44,7 +44,7 @@ jobs:
             set -e
             AWS_REGION=${{ secrets.AWS_REGION }}
             ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-            ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
+            ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_BACKEND }}
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky || true
