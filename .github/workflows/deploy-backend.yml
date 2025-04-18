@@ -33,18 +33,18 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }} 
-          username: ${{ secrets.EC2_USER }} 
-          key: ${{ secrets.EC2_SSH_KEY }} 
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        with:
+          host: ${{ secrets.EC2_HOST }} 
+          username: ${{ secrets.EC2_USER }} 
+          key: ${{ secrets.EC2_SSH_KEY }} 
           script: |
             set -e
             aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin $ECR_REGISTRY
+              | docker login --username AWS --password-stdin $ECR_REGISTRY
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky || true
             docker run -d \
@@ -52,5 +52,4 @@ jobs:
               -p 8080:8080 \
               --restart unless-stopped \
               $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-
-            docker logs gotlucky
+            docker ps -a
