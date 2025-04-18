@@ -37,15 +37,17 @@ jobs:
           host: ${{ secrets.EC2_HOST }} 
           username: ${{ secrets.EC2_USER }} 
           key: ${{ secrets.EC2_SSH_KEY }} 
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           script: |
             set -e
-            # pull latest
-            docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
-            # stop & remove old
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky || true
-            # run new
             docker run -d \
               --name gotlucky \
               -p 8080:8080 \
               --restart unless-stopped \
-              ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+              $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
