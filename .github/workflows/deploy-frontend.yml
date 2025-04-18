@@ -1,11 +1,11 @@
-name: Deploy Backend
+name: Deploy Frontend
 
 on:
   push:
     branches: [main, develop]
     paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
 
 jobs:
   build-and-deploy:
@@ -27,10 +27,10 @@ jobs:
 
       - name: Build, Tag & Push Docker image
         env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_BACKEND }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -f backend/Dockerfile -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -f frontend/Dockerfile -t $ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
@@ -53,7 +53,7 @@ jobs:
 
       - name: Cleanup ECR (keep the latest image)
         env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_BACKEND }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           set -e
