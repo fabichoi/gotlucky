@@ -43,13 +43,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }} 
           script: |
             set -e
-            aws ecr get-login-password --region $AWS_REGION \
-              | docker login --username AWS --password-stdin $ECR_REGISTRY
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky || true
-            docker run -d \
-              --name gotlucky \
-              -p 8080:8080 \
-              --restart unless-stopped \
-              $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+            docker run -d --name gotlucky -p 8080:8080 --restart unless-stopped $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker ps -a
