@@ -2,7 +2,7 @@ name: Deploy Backend
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/GL-11]
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
@@ -48,7 +48,15 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky-backend || true
-            docker run -d --name gotlucky-backend -p 8080:8080 --restart unless-stopped $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+            docker run -d --name gotlucky-backend \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_PORT=${{ secrets.DB_PORT }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -p 8080:8080 \
+              --restart unless-stopped \
+              $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
 
       - name: Cleanup ECR (keep the latest image)
         env:
