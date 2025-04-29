@@ -31,6 +31,7 @@ func main() {
 
 	if err := db.AutoMigrate(
 		&model.User{},
+		&model.AuthToken{},
 		&model.GameType{},
 		&model.GameSession{},
 		&model.GameResult{},

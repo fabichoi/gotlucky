@@ -2,6 +2,7 @@ package routes
 
 import (
 	"gotlucky/internal/handler"
+	"gotlucky/internal/middleware"
 	"gotlucky/internal/repository"
 	"gotlucky/internal/service"
 
@@ -14,6 +15,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.Default())
+	r.Use(middleware.AuthMiddleware(db))
 
 	api := r.Group("/v1")
 
@@ -37,7 +39,8 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	gameResultHandler := handler.NewGameResultHandler(gameResultService)
 	RegisterGameResultRoutes(api, gameResultHandler)
 
-	authService := service.NewAuthService(userRepo)
+	authRepo := repository.NewAuthRepository(db)
+	authService := service.NewAuthService(userRepo, authRepo)
 	authHandler := handler.NewAuthHandler(authService)
 	RegisterAuthRoutes(api, authHandler)
 

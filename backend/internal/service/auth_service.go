@@ -5,14 +5,16 @@ import (
 	"gotlucky/internal/model"
 	"gotlucky/internal/repository"
 	"gotlucky/internal/util"
+	"time"
 )
 
 type AuthService struct {
 	userRepo *repository.UserRepository
+	authRepo *repository.AuthRepository
 }
 
-func NewAuthService(userRepo *repository.UserRepository) *AuthService {
-	return &AuthService{userRepo}
+func NewAuthService(ur *repository.UserRepository, ar *repository.AuthRepository) *AuthService {
+	return &AuthService{ur, ar}
 }
 
 func (s *AuthService) Signup(email, password string) error {
@@ -44,6 +46,16 @@ func (s *AuthService) Login(email, password string) (string, error) {
 	if err != nil {
 		return "", errors.New("토큰 생성 실패")
 	}
+
+	expiresAt := time.Now().Add(72 * time.Hour)
+
+	authToken := model.AuthToken{
+		UserID:    user.ID,
+		Token:     token,
+		ExpiresAt: expiresAt,
+	}
+
+	s.authRepo.SaveToken(&authToken)
 
 	return token, nil
 }
