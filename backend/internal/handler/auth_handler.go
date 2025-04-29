@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"gotlucky/internal/dto"
 	"gotlucky/internal/service"
 	"net/http"
 
@@ -8,31 +9,21 @@ import (
 )
 
 type AuthHandler struct {
-	authService service.AuthService
+	Service *service.AuthService
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
-	return &AuthHandler{authService}
-}
-
-type SignupInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type LoginInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+func NewAuthHandler(s *service.AuthService) *AuthHandler {
+	return &AuthHandler{Service: s}
 }
 
 func (h *AuthHandler) Signup(c *gin.Context) {
-	var input SignupInput
+	var input dto.SignupInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.authService.Signup(input.Email, input.Password); err != nil {
+	if err := h.Service.Signup(input.Email, input.Password); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -41,13 +32,13 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
-	var input LoginInput
+	var input dto.LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, err := h.authService.Login(input.Email, input.Password)
+	token, err := h.Service.Login(input.Email, input.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
