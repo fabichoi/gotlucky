@@ -49,7 +49,6 @@ jobs:
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             docker rm -f gotlucky-frontend || true
             docker run -d --name gotlucky-frontend -p 3000:80 --restart unless-stopped $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-            docker ps -a
 
       - name: Cleanup ECR (keep the latest image)
         env:
