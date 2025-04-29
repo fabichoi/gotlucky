@@ -1,30 +1,43 @@
 package main
 
 import (
+	"gotlucky/internal/database"
 	"gotlucky/internal/model"
 	"gotlucky/internal/routes"
+	"log"
+	"os"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("lottery.db"), &gorm.Config{})
+	err := godotenv.Load()
 	if err != nil {
-		panic("DB 연결 실패")
+		log.Println(".env 파일 로드 실패 (무시하고 계속 진행)")
 	}
 
-	db.AutoMigrate(
+	cfg := database.DBConfig{
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Name:     os.Getenv("DB_NAME"),
+	}
+
+	db, err := database.Connect(cfg)
+	if err != nil {
+		panic("DB 연결 실패: " + err.Error())
+	}
+
+	if err := db.AutoMigrate(
 		&model.User{},
 		&model.LotteryResult{},
 		&model.GameType{},
 		&model.GameSession{},
 		&model.GameResult{},
-	)
-
-	// if err := util.SeedUsers(db); err != nil {
-	// 	panic("Init Failed: " + err.Error())
-	// }
+	); err != nil {
+		panic("AutoMigrate 실패: " + err.Error())
+	}
 
 	r := routes.SetupRouter(db)
 	r.Run(":8080")
