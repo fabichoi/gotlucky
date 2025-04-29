@@ -16,16 +16,22 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 
 func (r *UserRepository) GetUserById(id uint) (*model.User, error) {
 	var user model.User
-	err := r.db.First(&user, id).Error
-	return &user, err
+	if err := r.db.First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) GetUserByEmail(email string) (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *UserRepository) UpdateUser(user *model.User) error {
 	return r.db.Save(user).Error
-}
-
-func (r *UserRepository) SaveResult(result *model.LotteryResult) error {
-	return r.db.Create(result).Error
 }
 
 func (r *UserRepository) CreateUser(user *model.User) error {
