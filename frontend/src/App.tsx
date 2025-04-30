@@ -1,4 +1,4 @@
-import { Route, Routes, Link, useLocation } from "react-router-dom";
+import { Route, Routes, Link } from "react-router-dom";
 import { useUser } from "./context/UserContext";
 import Login from "./pages/Login";
 import PrivateRoute from "./components/PrivateRoute";
