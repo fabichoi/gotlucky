@@ -3,9 +3,9 @@ package model
 import "time"
 
 type AuthToken struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"index;not null"`
-	Token     string    `gorm:"uniqueIndex;size:512;not null"`
-	ExpiresAt time.Time `gorm:"index"`
-	CreatedAt time.Time
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index;not null" json:"user_id"`
+	Token     string    `gorm:"uniqueIndex;size:512;not null" json:"token"`
+	ExpiresAt time.Time `gorm:"index" json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
 }

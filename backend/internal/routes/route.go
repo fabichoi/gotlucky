@@ -5,6 +5,7 @@ import (
 	"gotlucky/internal/middleware"
 	"gotlucky/internal/repository"
 	"gotlucky/internal/service"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,14 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		// AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+		AllowAllOrigins:  true,
+	}))
 	r.Use(middleware.AuthMiddleware(db))
 
 	api := r.Group("/v1")

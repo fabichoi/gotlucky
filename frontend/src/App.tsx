@@ -1,25 +1,18 @@
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Link,
-  useLocation,
-} from "react-router-dom";
-import Home from "./pages/Home";
-import Policy from "./pages/Policy";
-import Results from "./pages/Results";
-import SubmitResults from "./pages/SubmitResults";
-import ManageGames from "./pages/ManageGames";
-import ManageGameTypes from "./pages/ManageGameTypes";
-import ManageUsers from "./pages/ManageUsers";
-import { useMemo } from "react";
+import { Route, Routes, Link, useLocation } from "react-router-dom";
+import { useUser } from "./context/UserContext";
+import Login from "./pages/Login";
+import PrivateRoute from "./components/PrivateRoute";
+import DefaultRoute from "./components/DefaultRoute";
+import LoadingSpinner from "./components/LoadingSpinner";
+import Logout from "./pages/Logout";
 
 function App() {
-  const location = useLocation();
-  const isAdmin = useMemo(
-    () => new URLSearchParams(location.search).has("admin"),
-    [location.search]
-  );
+  const { user } = useUser();
+  const isAdmin = user?.role === "admin";
+
+  if (user === undefined) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
@@ -33,47 +26,48 @@ function App() {
               ⚖️ 정책
             </Link>
             {isAdmin && (
-              <Link className="nav-link text-white px-2" to="/user?admin">
-                👤 유저 관리
-              </Link>
+              <>
+                <Link className="nav-link text-white px-2" to="/admin/user">
+                  👤 유저 관리
+                </Link>
+                <Link className="nav-link text-white px-2" to="/admin/submit">
+                  🛠️ 결과 기록
+                </Link>
+                <Link className="nav-link text-white px-2" to="/admin/manage">
+                  🧩 게임 관리
+                </Link>
+                <Link
+                  className="nav-link text-white px-2"
+                  to="/admin/manage/types"
+                >
+                  🎲 게임 타입
+                </Link>
+                <Link className="nav-link text-white px-2" to="/admin">
+                  📊 결과 보기
+                </Link>
+              </>
             )}
-            {isAdmin && (
-              <Link className="nav-link text-white px-2" to="/submit?admin">
-                🛠️ 결과 기록
-              </Link>
-            )}
-            {isAdmin && (
-              <Link className="nav-link text-white px-2" to="/manage?admin">
-                🧩 게임 관리
-              </Link>
-            )}
-            {isAdmin && (
-              <Link className="nav-link text-white px-2" to="/?admin">
-                📊 결과 보기
-              </Link>
-            )}
+            <Link to="/logout" className="nav-link text-white px-2">
+              🚪 로그아웃
+            </Link>
           </div>
         </div>
       </nav>
+
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/policy" element={<Policy />} />
-        {isAdmin && <Route path="/user" element={<ManageUsers />} />}
-        {isAdmin && <Route path="/submit" element={<SubmitResults />} />}
-        {isAdmin && <Route path="/manage" element={<ManageGames />} />}
-        {isAdmin && (
-          <Route path="/manage/types" element={<ManageGameTypes />} />
-        )}
-        <Route path="/results/:id" element={<Results />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/logout" element={<Logout />} />
+        <Route
+          path="/*"
+          element={
+            <PrivateRoute>
+              <DefaultRoute />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </>
   );
 }
 
-export default function AppWrapper() {
-  return (
-    <Router>
-      <App />
-    </Router>
-  );
-}
+export default App;

@@ -11,4 +11,5 @@ func RegisterUserRoutes(rg *gin.RouterGroup, userHandler *handler.UserHandler) {
 	rg.GET("/users", userHandler.GetUsers)
 	rg.PUT("/users/:id", userHandler.UpdateUser)
 	rg.DELETE("/users/:id", userHandler.DeleteUser)
+	rg.GET("/me", userHandler.GetMe)
 }
