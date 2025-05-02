@@ -1,16 +1,6 @@
 import { useState, useEffect } from "react";
 import { playLottery, getLastPlayedLotteryInfo } from "../api/gameApi";
 
-interface LotteryResult {
-  earned: number;
-  lastPlayed?: string;
-  error?: string;
-}
-
-interface LastPlayInfo {
-  lastPlayed: string | null;
-}
-
 export default function Lottery() {
   const [number, setNumber] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
