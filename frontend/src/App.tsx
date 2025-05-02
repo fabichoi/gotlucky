@@ -6,7 +6,7 @@ import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import DefaultRoute from "./components/DefaultRoute";
 import LoadingSpinner from "./components/LoadingSpinner";
-
+import Lottery from "./pages/Lottery";
 function App() {
   const { user } = useUser();
   const isAdmin = user?.role === "admin";
@@ -47,6 +47,9 @@ function App() {
             )}
             {user ? (
               <>
+                <Link className="nav-link text-white px-2" to="/lottery">
+                  🎲 로또 추첨
+                </Link>
                 <Link className="nav-link text-white px-2" to="/policy">
                   ⚖️ 정책
                 </Link>
@@ -72,6 +75,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/lottery" element={<Lottery />} />
         <Route
           path="/*"
           element={

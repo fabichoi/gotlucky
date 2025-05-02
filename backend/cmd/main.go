@@ -35,6 +35,8 @@ func main() {
 		&model.GameType{},
 		&model.GameSession{},
 		&model.GameResult{},
+		&model.LotteryType{},
+		&model.LotteryResult{},
 	); err != nil {
 		panic("AutoMigrate 실패: " + err.Error())
 	}

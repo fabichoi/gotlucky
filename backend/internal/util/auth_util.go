@@ -53,7 +53,7 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 }
 
 func GetUserIDFromContext(c *gin.Context) (uint, bool) {
-	userID, exists := c.Get("user_id")
+	userID, exists := c.Get("userID")
 	if !exists {
 		return 0, false
 	}
