@@ -3,6 +3,8 @@ import { createContext, useContext } from "react";
 export interface User {
   id: number;
   name: string;
+  email: string;
+  points: number;
   role: string;
 }
 
