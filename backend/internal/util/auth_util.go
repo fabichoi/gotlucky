@@ -3,6 +3,7 @@ package util
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -49,4 +50,14 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func GetUserIDFromContext(c *gin.Context) (uint, bool) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		return 0, false
+	}
+
+	id, ok := userID.(uint)
+	return id, ok
 }
