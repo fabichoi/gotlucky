@@ -1,6 +1,7 @@
 package service
 
 import (
+	"gotlucky/internal/dto"
 	"gotlucky/internal/model"
 	"gotlucky/internal/repository"
 )
@@ -30,7 +31,7 @@ func (s *UserService) DeleteUserByID(id string) error {
 	return s.repo.DeleteUserByID(id)
 }
 
-func (s *UserService) UpdateUserByID(id string, updated *model.User) (*model.User, error) {
+func (s *UserService) UpdateUserByID(id string, updated *dto.UpdateUserInput) (*model.User, error) {
 	user, err := s.repo.UpdateUserByID(id, updated)
 	return user, err
 }

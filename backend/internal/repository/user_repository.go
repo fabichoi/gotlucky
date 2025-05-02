@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"errors"
+	"gotlucky/internal/dto"
 	"gotlucky/internal/model"
+	"gotlucky/internal/util"
 
 	"gorm.io/gorm"
 )
@@ -48,14 +51,29 @@ func (r *UserRepository) DeleteUserByID(id string) error {
 	return r.db.Delete(&model.User{}, id).Error
 }
 
-func (r *UserRepository) UpdateUserByID(id string, updated *model.User) (*model.User, error) {
+func (r *UserRepository) UpdateUserByID(id string, updated *dto.UpdateUserInput) (*model.User, error) {
 	var user model.User
 	if err := r.db.First(&user, id).Error; err != nil {
 		return nil, err
 	}
 
-	user.Name = updated.Name
-	// 필요한 필드 추가 업데이트 가능
+	if updated.Name != "" {
+		user.Name = updated.Name
+	}
+
+	if updated.NewPassword != "" && updated.OldPassword != "" {
+		// 현재 비밀번호가 일치하는지 확인
+		if util.CheckPasswordHash(updated.OldPassword, user.Password) {
+			// 새 비밀번호 해싱
+			hashedPassword, err := util.HashPassword(updated.NewPassword)
+			if err != nil {
+				return nil, err
+			}
+			user.Password = hashedPassword
+		} else {
+			return nil, errors.New("현재 비밀번호가 일치하지 않습니다")
+		}
+	}
 
 	if err := r.db.Save(&user).Error; err != nil {
 		return nil, err

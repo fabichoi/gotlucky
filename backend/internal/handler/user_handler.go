@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"gotlucky/internal/dto"
 	"gotlucky/internal/model"
 	"gotlucky/internal/service"
 	"net/http"
@@ -52,7 +53,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	var updated model.User
+	var updated dto.UpdateUserInput
 	if err := c.ShouldBindJSON(&updated); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -60,7 +61,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	user, err := h.service.UpdateUserByID(id, &updated)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

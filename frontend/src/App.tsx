@@ -7,6 +7,8 @@ import PrivateRoute from "./components/PrivateRoute";
 import DefaultRoute from "./components/DefaultRoute";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Lottery from "./pages/Lottery";
+import Profile from "./pages/Profile";
+
 function App() {
   const { user } = useUser();
   const isAdmin = user?.role === "admin";
@@ -53,6 +55,9 @@ function App() {
                 <Link className="nav-link text-white px-2" to="/policy">
                   ⚖️ 정책
                 </Link>
+                <Link className="nav-link text-white px-2" to="/profile">
+                  📕 내 정보
+                </Link>
                 <Link to="/logout" className="nav-link text-white px-2">
                   🚪 로그아웃
                 </Link>
@@ -76,6 +81,7 @@ function App() {
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<Register />} />
         <Route path="/lottery" element={<Lottery />} />
+        <Route path="/profile" element={<Profile />} />
         <Route
           path="/*"
           element={

@@ -32,13 +32,16 @@ export async function deleteUser(id: number) {
   }
 }
 
-export async function updateUser(id: number, name: string) {
+export async function updateUser(
+  id: number,
+  payload: { name?: string; old_password?: string; new_password?: string }
+) {
   const res = await fetchWithAuth(`${API_BASE_URL}/v1/users/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("유저 수정 실패");
   return res.json();
