@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterUserRoutes(rg *gin.RouterGroup, userHandler *handler.UserHandler) {
-	rg.POST("/users", userHandler.CreateUser)
-	rg.GET("/users", userHandler.GetUsers)
-	rg.PUT("/users/:id", userHandler.UpdateUser)
-	rg.DELETE("/users/:id", userHandler.DeleteUser)
-	rg.GET("/me", userHandler.GetMe)
+func RegisterUserRoutes(rg *gin.RouterGroup, h *handler.UserHandler) {
+	rg.POST("/users", h.CreateUser)
+	rg.GET("/users", h.GetUsers)
+	rg.PUT("/users/:id", h.UpdateUser)
+	rg.DELETE("/users/:id", h.DeleteUser)
+	rg.GET("/me", h.GetMe)
 }

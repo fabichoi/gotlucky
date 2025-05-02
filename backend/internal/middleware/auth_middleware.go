@@ -13,7 +13,7 @@ import (
 
 func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	whitelist := []string{
-		"/v1/auth/signup",
+		"/v1/auth/register",
 		"/v1/auth/login",
 		"/health",
 	}

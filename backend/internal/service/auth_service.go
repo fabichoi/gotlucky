@@ -17,7 +17,7 @@ func NewAuthService(ur *repository.UserRepository, ar *repository.AuthRepository
 	return &AuthService{ur, ar}
 }
 
-func (s *AuthService) Signup(email, password string) error {
+func (s *AuthService) Register(email, password string) error {
 	hashedPassword, err := util.HashPassword(password)
 
 	if err != nil {

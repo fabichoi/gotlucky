@@ -1,15 +1,22 @@
-import { Navigate } from "react-router-dom";
-import { useUser } from "../context/UserContext";
-import { JSX } from "react";
+import { Route, Routes } from "react-router-dom";
+import Home from "../pages/Home";
+import Policy from "../pages/Policy";
+import Results from "../pages/Results";
+import SubmitResults from "../pages/SubmitResults";
+import ManageGames from "../pages/ManageGames";
+import ManageGameTypes from "../pages/ManageGameTypes";
+import ManageUsers from "../pages/ManageUsers";
 
-export default function PrivateRoute({ children }: { children: JSX.Element }) {
-  const { user } = useUser();
-
-  if (user === undefined) return null;
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
+export default function PrivateRoute() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/policy" element={<Policy />} />
+      <Route path="/results/:id" element={<Results />} />
+      <Route path="/admin/user" element={<ManageUsers />} />
+      <Route path="/admin/submit" element={<SubmitResults />} />
+      <Route path="/admin/manage" element={<ManageGames />} />
+      <Route path="/admin/manage/types" element={<ManageGameTypes />} />
+    </Routes>
+  );
 }
