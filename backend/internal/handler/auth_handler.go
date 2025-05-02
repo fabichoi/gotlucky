@@ -16,14 +16,14 @@ func NewAuthHandler(s *service.AuthService) *AuthHandler {
 	return &AuthHandler{Service: s}
 }
 
-func (h *AuthHandler) Signup(c *gin.Context) {
-	var input dto.SignupInput
+func (h *AuthHandler) Register(c *gin.Context) {
+	var input dto.RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.Service.Signup(input.Email, input.Password); err != nil {
+	if err := h.Service.Register(input.Email, input.Password); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

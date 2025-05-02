@@ -1,10 +1,11 @@
 import { Route, Routes, Link } from "react-router-dom";
 import { useUser } from "./context/UserContext";
 import Login from "./pages/Login";
+import Logout from "./pages/Logout";
+import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import DefaultRoute from "./components/DefaultRoute";
 import LoadingSpinner from "./components/LoadingSpinner";
-import Logout from "./pages/Logout";
 
 function App() {
   const { user } = useUser();
@@ -19,12 +20,9 @@ function App() {
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary px-4">
         <div className="container-fluid" style={{ maxWidth: "1920px" }}>
           <Link className="navbar-brand me-3" to="/">
-            🎯 게임
+            🎯 GotLucky
           </Link>
           <div className="navbar-nav flex-row gap-2">
-            <Link className="nav-link text-white px-2" to="/policy">
-              ⚖️ 정책
-            </Link>
             {isAdmin && (
               <>
                 <Link className="nav-link text-white px-2" to="/admin/user">
@@ -47,9 +45,25 @@ function App() {
                 </Link>
               </>
             )}
-            <Link to="/logout" className="nav-link text-white px-2">
-              🚪 로그아웃
-            </Link>
+            {user ? (
+              <>
+                <Link className="nav-link text-white px-2" to="/policy">
+                  ⚖️ 정책
+                </Link>
+                <Link to="/logout" className="nav-link text-white px-2">
+                  🚪 로그아웃
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="nav-link text-white px-2">
+                  🔐 로그인
+                </Link>
+                <Link to="/register" className="nav-link text-white px-2">
+                  🗄️ 회원가입
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -57,12 +71,13 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/*"
           element={
-            <PrivateRoute>
-              <DefaultRoute />
-            </PrivateRoute>
+            <DefaultRoute>
+              <PrivateRoute />
+            </DefaultRoute>
           }
         />
       </Routes>
