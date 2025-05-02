@@ -117,7 +117,9 @@ export async function updateGameSession(date: string, game_type_id: number) {
 }
 
 export async function fetchGameResult(sessionId: number) {
-  const res = await fetchWithAuth(`${API_BASE_URL}/v1/games/${sessionId}/results`);
+  const res = await fetchWithAuth(
+    `${API_BASE_URL}/v1/games/${sessionId}/results`
+  );
   return res.json();
 }
 
@@ -125,13 +127,16 @@ export async function submitGameResults(
   sessionId: number,
   payload: { user_id: number; rank: number; points_earned: number }[]
 ) {
-  const res = await fetchWithAuth(`${API_BASE_URL}/v1/games/${sessionId}/results`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const res = await fetchWithAuth(
+    `${API_BASE_URL}/v1/games/${sessionId}/results`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
   return res.json();
 }
 
@@ -170,5 +175,31 @@ export async function register(name: string, email: string, password: string) {
     throw new Error("Register failed");
   }
 
+  return res.json();
+}
+
+export async function playLottery() {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/lottery/play`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error("lottery play failed");
+  }
+  return res.json();
+}
+
+export async function getLastPlayedLotteryInfo() {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/lottery/last-played`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error("마지막 추첨 정보 조회 실패");
+  }
   return res.json();
 }
