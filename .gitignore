@@ -36,3 +36,7 @@ crashlytics-build.properties
 fabric.properties
 
 *.db
+node_modules/
+.vite/
+.secrets
+.env

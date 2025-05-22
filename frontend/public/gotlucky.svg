@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <g fill="none" stroke="green" stroke-width="2" fill-rule="evenodd">
+    <!-- Leaf 1 -->
+    <path d="M50 20 C55 10, 70 10, 70 25 C70 40, 55 40, 50 30 C45 40, 30 40, 30 25 C30 10, 45 10, 50 20 Z" fill="#7CFC00"/>
+    <!-- Leaf 2 -->
+    <path d="M50 20 C45 10, 30 10, 30 25 C30 40, 45 40, 50 30 C55 40, 70 40, 70 25 C70 10, 55 10, 50 20 Z" transform="rotate(90 50 50)" fill="#7CFC00"/>
+    <!-- Leaf 3 -->
+    <path d="M50 20 C55 10, 70 10, 70 25 C70 40, 55 40, 50 30 C45 40, 30 40, 30 25 C30 10, 45 10, 50 20 Z" transform="rotate(180 50 50)" fill="#7CFC00"/>
+    <!-- Leaf 4 -->
+    <path d="M50 20 C45 10, 30 10, 30 25 C30 40, 45 40, 50 30 C55 40, 70 40, 70 25 C70 10, 55 10, 50 20 Z" transform="rotate(270 50 50)" fill="#7CFC00"/>
+    <!-- Stem -->
+    <path d="M50 60 Q52 70, 50 80 Q48 70, 50 60" fill="#228B22"/>
+  </g>
+</svg>
