@@ -34,7 +34,7 @@ export async function deleteUser(id: number) {
 
 export async function updateUser(
   id: number,
-  payload: { name?: string; old_password?: string; new_password?: string }
+  payload: { name?: string; email?: string; old_password?: string; new_password?: string }
 ) {
   const res = await fetchWithAuth(`${API_BASE_URL}/v1/users/${id}`, {
     method: "PATCH",

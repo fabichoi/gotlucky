@@ -61,6 +61,10 @@ func (r *UserRepository) UpdateUserByID(id string, updated *dto.UpdateUserInput)
 		user.Name = updated.Name
 	}
 
+	if updated.Email != "" {
+		user.Email = updated.Email
+	}
+
 	if updated.NewPassword != "" && updated.OldPassword != "" {
 		// 현재 비밀번호가 일치하는지 확인
 		if util.CheckPasswordHash(updated.OldPassword, user.Password) {

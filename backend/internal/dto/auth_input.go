@@ -14,6 +14,7 @@ type LoginInput struct {
 
 type UpdateUserInput struct {
 	Name        string `json:"name,omitempty"`
+	Email       string `json:"email,omitempty"`
 	OldPassword string `json:"old_password,omitempty"`
 	NewPassword string `json:"new_password,omitempty"`
 }
