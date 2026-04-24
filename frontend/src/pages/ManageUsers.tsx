@@ -4,6 +4,7 @@ import { createUser, deleteUser, fetchUsers, updateUser } from "../api/gameApi";
 interface User {
   id: number;
   name: string;
+  email: string;
 }
 
 export default function ManageUsers() {
@@ -11,6 +12,7 @@ export default function ManageUsers() {
   const [newName, setNewName] = useState("");
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [editUserName, setEditUserName] = useState("");
+  const [editUserEmail, setEditUserEmail] = useState("");
   const [message, setMessage] = useState("");
 
   const loadUsers = async () => {
@@ -51,15 +53,17 @@ export default function ManageUsers() {
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
     setEditUserName(user.name);
+    setEditUserEmail(user.email || "");
   };
 
   const handleUpdate = async () => {
-    if (editUserId === null || !editUserName) return;
+    if (editUserId === null || (!editUserName && !editUserEmail)) return;
     try {
-      updateUser(editUserId, { name: editUserName });
+      await updateUser(editUserId, { name: editUserName, email: editUserEmail });
       setMessage("유저가 수정되었습니다.");
       setEditUserId(null);
       setEditUserName("");
+      setEditUserEmail("");
       loadUsers();
     } catch (err) {
       console.error(err);
@@ -105,6 +109,14 @@ export default function ManageUsers() {
                     style={{ maxWidth: "200px" }}
                     value={editUserName}
                     onChange={(e) => setEditUserName(e.target.value)}
+                    placeholder="이름"
+                  />
+                  <input
+                    className="form-control me-2"
+                    style={{ maxWidth: "250px" }}
+                    value={editUserEmail}
+                    onChange={(e) => setEditUserEmail(e.target.value)}
+                    placeholder="이메일"
                   />
                   <button
                     className="btn btn-sm btn-success me-1"
@@ -114,14 +126,19 @@ export default function ManageUsers() {
                   </button>
                   <button
                     className="btn btn-sm btn-secondary"
-                    onClick={() => setEditUserId(null)}
+                    onClick={() => {
+                      setEditUserId(null);
+                      setEditUserEmail("");
+                    }}
                   >
                     취소
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="me-auto">{u.name || `User ${u.id}`}</span>
+                  <span className="me-auto">
+                    {u.name || `User ${u.id}`} {u.email ? `(${u.email})` : ""}
+                  </span>
                   <button
                     className="btn btn-sm btn-outline-primary me-2"
                     onClick={() => handleEdit(u)}
