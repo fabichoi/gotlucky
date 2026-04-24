@@ -120,104 +120,133 @@ export default function Profile() {
   };
 
   return (
-    <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">내 정보 관리</h1>
-
-      {message && (
-        <div
-          className={`alert alert-${
-            message.type === "success" ? "success" : "danger"
-          } mb-4`}
-        >
-          {message.text}
+    <div className="container py-5 fade-in" style={{ maxWidth: "800px" }}>
+      <div className="d-flex justify-content-between align-items-end mb-4">
+        <div>
+          <h1 className="fw-bold mb-0" style={{ letterSpacing: "-1px" }}>📕 내 정보 관리</h1>
+          <p className="text-muted mb-0">계정 정보 및 보안 설정을 관리하세요</p>
         </div>
-      )}
+        {message && (
+          <div
+            className={`alert alert-${message.type === "success" ? "success" : "danger"} mb-0 py-2 border-0 shadow-sm`}
+            style={{ borderRadius: "10px" }}
+          >
+            {message.text}
+          </div>
+        )}
+      </div>
 
-      <form onSubmit={handleUpdateUser}>
-        <div className="mb-3">
-          <label className="form-label">이름</label>
-          <input
-            type="text"
-            className="form-control"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">이메일</label>
-          <input
-            type="email"
-            className="form-control"
-            value={form.email}
-            disabled
-          />
-          <div className="form-text text-muted">
-            이메일은 변경할 수 없습니다.
+      <div className="row g-4">
+        {/* Point Card */}
+        <div className="col-md-4">
+          <div className="glass-card p-4 h-100 d-flex flex-column justify-content-center text-center">
+            <div className="small fw-bold text-uppercase text-muted mb-2" style={{ letterSpacing: "1px" }}>보유 포인트</div>
+            <div className="display-5 fw-black text-primary mb-1">{form.points.toLocaleString()}</div>
+            <div className="fw-bold text-muted">Lucky Points</div>
           </div>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">보유 포인트</label>
-          <div className="d-flex align-items-center">
-            <span className="fs-4 fw-bold text-primary me-2">{form.points}</span>
-            <span className="text-muted">P</span>
+        {/* Info & Security Card */}
+        <div className="col-md-8">
+          <form onSubmit={handleUpdateUser} className="glass-card p-4 h-100">
+            <div className="mb-4">
+              <h5 className="fw-bold mb-3 border-bottom pb-2">회원 정보</h5>
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">이름</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  style={{ borderRadius: "8px", padding: "0.6rem" }}
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">이메일</label>
+                <input
+                  type="email"
+                  className="form-control bg-light"
+                  style={{ borderRadius: "8px", padding: "0.6rem" }}
+                  value={form.email}
+                  disabled
+                />
+                <div className="form-text small">이메일은 변경할 수 없습니다.</div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h5 className="fw-bold mb-3 border-bottom pb-2">비밀번호 변경</h5>
+              <div className="mb-3">
+                <label className="form-label small fw-bold text-muted">현재 비밀번호</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  style={{ borderRadius: "8px", padding: "0.6rem" }}
+                  name="oldPassword"
+                  value={form.oldPassword}
+                  onChange={handleChange}
+                  placeholder="정보 수정을 위해 필요합니다"
+                />
+              </div>
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label small fw-bold text-muted">새 비밀번호</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    style={{ borderRadius: "8px", padding: "0.6rem" }}
+                    name="newPassword"
+                    value={form.newPassword}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label small fw-bold text-muted">비밀번호 확인</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    style={{ borderRadius: "8px", padding: "0.6rem" }}
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary w-100 py-3"
+              disabled={isLoading}
+              style={{ borderRadius: "10px" }}
+            >
+              {isLoading ? "변경 사항 저장 중..." : "프로필 업데이트"}
+            </button>
+          </form>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="col-12 mt-5">
+          <div className="p-4 border border-danger border-opacity-25 bg-danger bg-opacity-10" style={{ borderRadius: "16px" }}>
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 className="fw-bold text-danger mb-1">위험 구역</h6>
+                <p className="small text-danger mb-0 opacity-75">계정을 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={handleDeleteUser}
+                style={{ borderRadius: "8px" }}
+              >
+                회원 탈퇴
+              </button>
+            </div>
           </div>
         </div>
-
-        <div className="mb-3">
-          <label className="form-label">현재 비밀번호</label>
-          <input
-            type="password"
-            className="form-control"
-            name="oldPassword"
-            value={form.oldPassword}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">새 비밀번호</label>
-          <input
-            type="password"
-            className="form-control"
-            name="newPassword"
-            value={form.newPassword}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">새 비밀번호 확인</label>
-          <input
-            type="password"
-            className="form-control"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="d-flex justify-content-between align-items-center">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? "저장 중..." : "저장하기"}
-          </button>
-
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={handleDeleteUser}
-          >
-            회원 탈퇴
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

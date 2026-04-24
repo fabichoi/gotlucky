@@ -48,14 +48,23 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	RegisterGameResultRoutes(api, gameResultHandler)
 
 	authRepo := repository.NewAuthRepository(db)
-	authService := service.NewAuthService(userRepo, authRepo)
+	inviteRepo := repository.NewInviteRepository(db)
+	authService := service.NewAuthService(userRepo, authRepo, inviteRepo)
 	authHandler := handler.NewAuthHandler(authService)
 	RegisterAuthRoutes(api, authHandler)
+
+	inviteHandler := handler.NewInviteHandler(inviteRepo)
+	api.POST("/admin/invites", inviteHandler.GenerateCode)
+	api.GET("/admin/invites", inviteHandler.ListCodes)
 
 	lotteryRepo := repository.NewLotteryRepository(db)
 	lotteryService := service.NewLotteryService(userRepo, lotteryRepo)
 	lotteryHandler := handler.NewLotteryHandler(lotteryService)
 	RegisterLotteryRoutes(api, lotteryHandler)
+
+	skullKingService := service.NewSkullKingService(db)
+	skullKingHandler := handler.NewSkullKingHandler(skullKingService)
+	RegisterSkullKingRoutes(api, skullKingHandler)
 
 	return r
 }

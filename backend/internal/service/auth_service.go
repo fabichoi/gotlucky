@@ -9,27 +9,39 @@ import (
 )
 
 type AuthService struct {
-	userRepo *repository.UserRepository
-	authRepo *repository.AuthRepository
+	userRepo   *repository.UserRepository
+	authRepo   *repository.AuthRepository
+	inviteRepo *repository.InviteRepository
 }
 
-func NewAuthService(ur *repository.UserRepository, ar *repository.AuthRepository) *AuthService {
-	return &AuthService{ur, ar}
+func NewAuthService(ur *repository.UserRepository, ar *repository.AuthRepository, ir *repository.InviteRepository) *AuthService {
+	return &AuthService{ur, ar, ir}
 }
 
-func (s *AuthService) Register(email, password string) error {
+func (s *AuthService) Register(name, email, password, inviteCode string) error {
+	// Validate invite code
+	invite, err := s.inviteRepo.GetUnusedCode(inviteCode)
+	if err != nil {
+		return errors.New("유효하지 않거나 이미 사용된 초대 코드입니다.")
+	}
+
 	hashedPassword, err := util.HashPassword(password)
-
 	if err != nil {
 		return err
 	}
 
 	user := &model.User{
+		Name:     name,
 		Email:    email,
 		Password: hashedPassword,
 	}
 
-	return s.userRepo.CreateUser(user)
+	if err := s.userRepo.CreateUser(user); err != nil {
+		return err
+	}
+
+	// Mark invite code as used
+	return s.inviteRepo.MarkAsUsed(invite.Code, user.ID)
 }
 
 func (s *AuthService) Login(email, password string) (string, error) {

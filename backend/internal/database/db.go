@@ -1,30 +1,16 @@
 package database
 
 import (
-	"fmt"
-
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type DBConfig struct {
-	User     string
-	Password string
-	Host     string
-	Port     string
-	Name     string
+	Path string
 }
 
 func Connect(cfg DBConfig) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.User,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Name,
-	)
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
