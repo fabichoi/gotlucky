@@ -87,7 +87,7 @@ export default function SkullKingAdmin() {
     }
     setIsSubmitting(true);
     try {
-      const newGame = await createSkullKingGame(selectedUserIds);
+      await createSkullKingGame(selectedUserIds);
       const fullGame = await fetchActiveSkullKingGame(); // Get with scores
       setActiveGame(fullGame);
     } catch (err) {

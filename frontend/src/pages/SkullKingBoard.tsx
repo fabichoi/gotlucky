@@ -27,7 +27,7 @@ export default function SkullKingBoard() {
   const [hasError, setHasError] = useState(false);
   const fetchingRef = useRef(false);
 
-  const fetchData = async (isInitial = false) => {
+  const fetchData = async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     
@@ -58,13 +58,13 @@ export default function SkullKingBoard() {
   };
 
   useEffect(() => {
-    fetchData(true);
+    fetchData();
   }, []); // Only initial fetch on mount
 
   useEffect(() => {
     let timer: any;
     if (!hasError && !isLoading) {
-      timer = setInterval(() => fetchData(false), 3000);
+      timer = setInterval(() => fetchData(), 3000);
     }
     return () => clearInterval(timer);
   }, [hasError, isLoading]);
@@ -154,7 +154,7 @@ export default function SkullKingBoard() {
               </tr>
             </thead>
             <tbody>
-              {playersInOrder.map((p, pIndex) => (
+              {playersInOrder.map((p) => (
                 <tr key={p.id} className="border-bottom-subtle">
                   <td className="sticky-col-name ps-2">
                     <div className="d-flex align-items-center gap-1 overflow-hidden">
