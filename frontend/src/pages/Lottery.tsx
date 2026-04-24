@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { playLottery, getLastPlayedLotteryInfo } from "../api/gameApi";
 
 export default function Lottery() {
-  const [number, setNumber] = useState<number | null>(null);
+  // const [number, setNumber] = useState<number | null>(null); // Removed unused state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayNumber, setDisplayNumber] = useState<number | null>(null);
@@ -79,7 +79,7 @@ export default function Lottery() {
         return;
       }
 
-      setNumber(result.earned);
+      // setNumber(result.earned); // Removed unused setter
       setDisplayNumber(result.earned);
       setLastPlayed(result.lastPlayed || null);
       setCanPlay(false);
@@ -93,14 +93,16 @@ export default function Lottery() {
   };
 
   return (
-    <div className="container py-4" style={{ maxWidth: "960px" }}>
-      <h1 className="mb-4">🎲 복권 추첨</h1>
+    <div className="container py-5 fade-in" style={{ maxWidth: "600px" }}>
+      <div className="glass-card p-5 text-center">
+        <h1 className="mb-2 fw-bold" style={{ letterSpacing: "-1px" }}>🎲 복권 추첨</h1>
+        <p className="text-muted mb-4">당신의 행운을 시험해보세요</p>
 
-      {lastPlayed !== null && !canPlay && !displayNumber && !isLoading && (
-        <div className="alert alert-info text-center mb-3" role="alert">
-          마지막 추첨 시간: {new Date(lastPlayed).toLocaleString()}
-          {!canPlay && (
-            <div className="mt-2">
+        {lastPlayed !== null && !canPlay && !displayNumber && !isLoading && (
+          <div className="alert border-0 bg-light text-center mb-4" style={{ borderRadius: "12px" }}>
+            <div className="small text-muted mb-1">마지막 추첨</div>
+            <div className="fw-bold">{new Date(lastPlayed).toLocaleString()}</div>
+            <div className="mt-2 text-primary small">
               다음 추첨까지{" "}
               {(() => {
                 const hoursDiff =
@@ -113,81 +115,70 @@ export default function Lottery() {
               })()}
               남았습니다
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      <div className="text-center mb-4">
+        <div className="mb-5 mt-4 d-flex flex-column align-items-center">
+          {(displayNumber !== null || (lastEarned !== null && !canPlay && !isLoading)) ? (
+            <div
+              className="d-flex align-items-center justify-content-center mb-3 shadow-lg"
+              style={{
+                width: "160px",
+                height: "160px",
+                borderRadius: "50%",
+                backgroundColor: getNumberColor(displayNumber ?? lastEarned ?? 0),
+                fontSize: "3.5rem",
+                fontWeight: "900",
+                color: ["#FFFF00", "#00FF00"].includes(getNumberColor(displayNumber ?? lastEarned ?? 0))
+                  ? "#000"
+                  : "#fff",
+                transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                border: "8px solid rgba(255, 255, 255, 0.2)",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+              }}
+            >
+              {displayNumber ?? lastEarned}
+            </div>
+          ) : (
+            <div
+              className="d-flex align-items-center justify-content-center mb-3 text-muted"
+              style={{
+                width: "160px",
+                height: "160px",
+                borderRadius: "50%",
+                backgroundColor: "#f1f5f9",
+                fontSize: "3.5rem",
+                fontWeight: "900",
+                border: "8px dashed #e2e8f0"
+              }}
+            >
+              ?
+            </div>
+          )}
+          <div className="text-muted fw-medium">
+            {isLoading ? "행운의 번호를 찾는 중..." : displayNumber !== null ? "오늘의 당첨 번호!" : "번호를 뽑아주세요"}
+          </div>
+        </div>
+
         <button
-          className="btn btn-primary btn-lg"
+          className="btn btn-primary btn-lg w-100 py-3 mb-3"
           onClick={drawNumber}
           disabled={buttonDisabled || !canPlay}
+          style={{ fontSize: "1.1rem", borderRadius: "12px" }}
         >
           {isLoading
-            ? "추첨 중..."
+            ? "추첨 진행 중..."
             : !canPlay
-            ? "다음 추첨까지 대기 중..."
+            ? "내일 다시 도전하세요"
             : "번호 추첨하기"}
         </button>
+
+        {error && (
+          <div className="text-danger small mt-2" role="alert">
+            {error}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="alert alert-danger text-center" role="alert">
-          {error}
-        </div>
-      )}
-
-      {lastEarned !== null && !canPlay && !displayNumber && !isLoading && (
-        <div className="text-center mb-4">
-          <div
-            className="d-inline-flex align-items-center justify-content-center mb-2"
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "50%",
-              backgroundColor: getNumberColor(lastEarned),
-              fontSize: "2.5rem",
-              fontWeight: "bold",
-              color: ["#FFFF00", "#00FF00"].includes(getNumberColor(lastEarned))
-                ? "#000"
-                : "#fff",
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            {lastEarned}
-          </div>
-          <div className="text-muted">마지막 추첨 번호: {lastEarned}</div>
-        </div>
-      )}
-
-      {displayNumber !== null && (
-        <div className="text-center">
-          <div
-            className="d-inline-flex align-items-center justify-content-center mb-3"
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "50%",
-              backgroundColor: getNumberColor(displayNumber),
-              fontSize: "2.5rem",
-              fontWeight: "bold",
-              color: ["#FFFF00", "#00FF00"].includes(
-                getNumberColor(displayNumber)
-              )
-                ? "#000"
-                : "#fff",
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            {displayNumber}
-          </div>
-          <div className="text-muted">
-            {number === displayNumber
-              ? `당첨 번호: ${displayNumber}`
-              : "번호 추첨 중..."}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

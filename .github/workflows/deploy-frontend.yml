@@ -8,33 +8,37 @@ on:
       - '.github/workflows/deploy-frontend.yml'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, Tag & Push Docker image
+      - name: Build Frontend
         env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
-          IMAGE_TAG: ${{ github.sha }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: |
-          docker build -f frontend/Dockerfile --build-arg VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} -t $ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+          cd frontend
+          npm ci
+          npm run build
 
-      - name: Deploy to EC2 via SSH
+      - name: Copy frontend files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "frontend/dist/**,frontend/nginx.conf"
+          target: "~/gotlucky"
+
+      - name: Configure Nginx and Deploy on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }} 
@@ -42,38 +46,37 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }} 
           script: |
             set -e
-            AWS_REGION=${{ secrets.AWS_REGION }}
-            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-            ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_FRONTEND }}
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-            docker rm -f gotlucky-frontend || true
-            docker run -d --name gotlucky-frontend -p 3000:80 --restart unless-stopped $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+            
+            # 1. Install Nginx if missing
+            if ! command -v nginx &> /dev/null; then
+              echo "Installing Nginx..."
+              sudo apt-get update
+              sudo apt-get install -y nginx
+            fi
+            
+            # 2. Setup web directory
+            sudo mkdir -p /var/www/fabichoi
+            sudo rsync -a ~/gotlucky/frontend/dist/ /var/www/fabichoi/
+            sudo chown -R www-data:www-data /var/www/fabichoi
+            
+            # 3. Configure Nginx
+            NGINX_CONF="/etc/nginx/sites-available/gotlucky-frontend"
+            
+            # Update listen port to 3000 to match previous behavior, and set root directory
+            cat ~/gotlucky/frontend/nginx.conf \
+              | sed 's|listen 80;|listen 3000;|' \
+              | sed 's|root /usr/share/nginx/html;|root /var/www/fabichoi;|' > /tmp/gotlucky-nginx.conf
+              
+            sudo mv /tmp/gotlucky-nginx.conf $NGINX_CONF
+            
+            # Enable site
+            sudo ln -sf $NGINX_CONF /etc/nginx/sites-enabled/gotlucky-frontend
+            
+            # Remove default nginx site if it conflicts
+            sudo rm -f /etc/nginx/sites-enabled/default
+            
+            # 4. Restart Nginx
+            sudo systemctl restart nginx
+            
 
-      - name: Cleanup ECR (keep the latest image)
-        env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_FRONTEND }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: |
-          set -e
-          echo "Fetching all tagged image digests sorted by push time..."
-
-          aws ecr describe-images \
-            --repository-name $ECR_REPOSITORY \
-            --region $AWS_REGION \
-            --query 'sort_by(imageDetails,& imagePushedAt)[*].imageDigest' \
-            --output json \
-          | jq 'reverse | .[1:] | map({imageDigest: .})' > images-to-delete.json
-
-          COUNT=$(jq length images-to-delete.json)
-          echo "Found $COUNT old images to delete."
-
-          if [ "$COUNT" -gt 0 ]; then
-            aws ecr batch-delete-image \
-              --repository-name $ECR_REPOSITORY \
-              --region $AWS_REGION \
-              --image-ids file://images-to-delete.json
-          else
-            echo "No images to delete."
-          fi
 

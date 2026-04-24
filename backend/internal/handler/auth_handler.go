@@ -23,7 +23,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.Service.Register(input.Email, input.Password); err != nil {
+	if err := h.Service.Register(input.Name, input.Email, input.Password, input.InviteCode); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

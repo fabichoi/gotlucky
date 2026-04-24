@@ -4,6 +4,7 @@ import (
 	"gotlucky/internal/database"
 	"gotlucky/internal/model"
 	"gotlucky/internal/routes"
+	"gotlucky/internal/util"
 	"log"
 	"os"
 
@@ -17,11 +18,7 @@ func main() {
 	}
 
 	cfg := database.DBConfig{
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		Name:     os.Getenv("DB_NAME"),
+		Path: os.Getenv("DB_PATH"),
 	}
 
 	db, err := database.Connect(cfg)
@@ -37,9 +34,14 @@ func main() {
 		&model.GameResult{},
 		&model.LotteryType{},
 		&model.LotteryResult{},
+		&model.SkullKingGame{},
+		&model.SkullKingScore{},
+		&model.InviteCode{},
 	); err != nil {
 		panic("AutoMigrate 실패: " + err.Error())
 	}
+
+	util.SeedUsers(db)
 
 	r := routes.SetupRouter(db)
 	r.Run(":8080")

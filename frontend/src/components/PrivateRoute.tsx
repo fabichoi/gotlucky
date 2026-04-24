@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import Home from "../pages/Home";
+import SkullKingHistory from "../pages/SkullKingHistory";
 import Policy from "../pages/Policy";
 import Results from "../pages/Results";
 import SubmitResults from "../pages/SubmitResults";
@@ -10,7 +10,7 @@ import ManageUsers from "../pages/ManageUsers";
 export default function PrivateRoute() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<SkullKingHistory />} />
       <Route path="/policy" element={<Policy />} />
       <Route path="/results/:id" element={<Results />} />
       <Route path="/admin/user" element={<ManageUsers />} />
