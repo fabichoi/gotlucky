@@ -62,7 +62,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "frontend/dist/**,frontend/nginx.conf"
+          source: "frontend/dist/**"
           target: "~/gotlucky"
 
       - name: Configure Nginx and Deploy on EC2
@@ -74,35 +74,9 @@ jobs:
           script: |
             set -e
             
-            # 1. Install Nginx if missing
-            if ! command -v nginx &> /dev/null; then
-              echo "Installing Nginx..."
-              sudo apt-get update
-              sudo apt-get install -y nginx
-            fi
-            
-            # 2. Setup web directory
             sudo mkdir -p /var/www/fabichoi
             sudo rsync -a ~/gotlucky/frontend/dist/ /var/www/fabichoi/
             sudo chown -R www-data:www-data /var/www/fabichoi
-            
-            # 3. Configure Nginx
-            NGINX_CONF="/etc/nginx/sites-available/gotlucky-frontend"
-            
-            # Update listen port to 3000 to match previous behavior, and set root directory
-            cat ~/gotlucky/frontend/nginx.conf \
-              | sed 's|listen 80;|listen 3000;|' \
-              | sed 's|root /usr/share/nginx/html;|root /var/www/fabichoi;|' > /tmp/gotlucky-nginx.conf
-              
-            sudo mv /tmp/gotlucky-nginx.conf $NGINX_CONF
-            
-            # Enable site
-            sudo ln -sf $NGINX_CONF /etc/nginx/sites-enabled/gotlucky-frontend
-            
-            # Remove default nginx site if it conflicts
-            sudo rm -f /etc/nginx/sites-enabled/default
-            
-            # 4. Restart Nginx
             sudo systemctl restart nginx
 
       - name: Remove Github Actions IP from security group
