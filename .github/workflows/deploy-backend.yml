@@ -57,49 +57,23 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/*"
-          target: "/home/ubuntu/gotlucky"
+          source: "gotlucky-backend"
+          target: "/home/ubuntu/gotlucky/backend/temp"
+          strip_components: 1
           overwrite: true
 
-      - name: Build and Deploy on EC2
+      - name: Deploy and Restart Service
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }} 
           username: ${{ secrets.EC2_USER }} 
           key: ${{ secrets.EC2_SSH_KEY }} 
           script: |
-            set -e
-            
-            cd ~/gotlucky/backend
-            chmod +x gotlucky-backend
-            
-            echo "Configuring systemd service..."
-            SERVICE_FILE="/tmp/gotlucky-backend.service"
-            cat > $SERVICE_FILE <<EOF
-            [Unit]
-            Description=GotLucky Backend Service
-            After=network.target
-
-            [Service]
-            Type=simple
-            User=${{ secrets.EC2_USER }}
-            WorkingDirectory=/home/${{ secrets.EC2_USER }}/gotlucky/backend
-            ExecStart=/home/${{ secrets.EC2_USER }}/gotlucky/backend/gotlucky-backend
-            Environment="GIN_MODE=release"
-            Environment="DB_PATH=/home/${{ secrets.EC2_USER }}/gotlucky/backend/gotlucky.db"
-            Restart=always
-            RestartSec=3
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
-            
-            sudo mv $SERVICE_FILE /etc/systemd/system/gotlucky-backend.service
-            
-            # 4. Reload and Restart
-            sudo systemctl daemon-reload
-            sudo systemctl enable gotlucky-backend
-            sudo systemctl restart gotlucky-backend
+            sudo systemctl stop gotlucky-backend || true
+            mkdir -p /home/ubuntu/gotlucky/backend
+            mv /home/ubuntu/gotlucky/temp/gotlucky-backend /home/ubuntu/gotlucky/backend/gotlucky-backend
+            chmod +x /home/ubuntu/gotlucky/backend/gotlucky-backend
+            sudo systemctl start gotlucky-backend
 
       - name: Remove Github Actions IP from security group
         if: always()
