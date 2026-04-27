@@ -57,8 +57,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "gotlucky-backend"
-          target: "/home/ubuntu/gotlucky/backend/temp"
+          source: "backend/gotlucky-backend"
+          target: "/home/ubuntu/gotlucky_temp"
           strip_components: 1
           overwrite: true
 
@@ -71,7 +71,7 @@ jobs:
           script: |
             sudo systemctl stop gotlucky-backend || true
             mkdir -p /home/ubuntu/gotlucky/backend
-            mv /home/ubuntu/gotlucky/temp/gotlucky-backend /home/ubuntu/gotlucky/backend/gotlucky-backend
+            mv /home/ubuntu/gotlucky_temp/gotlucky-backend /home/ubuntu/gotlucky/backend/gotlucky-backend
             chmod +x /home/ubuntu/gotlucky/backend/gotlucky-backend
             sudo systemctl start gotlucky-backend
 
