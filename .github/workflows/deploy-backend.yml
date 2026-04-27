@@ -59,22 +59,10 @@ jobs:
           script: |
             set -e
             
-            # 1. Install Go if missing
-            if ! command -v go &> /dev/null; then
-              echo "Installing Go..."
-              curl -OL https://go.dev/dl/go1.22.2.linux-amd64.tar.gz
-              sudo tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
-              echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.profile
-              rm go1.22.2.linux-amd64.tar.gz
-            fi
-            export PATH=$PATH:/usr/local/go/bin
-            
-            # 2. Build the Go binary
             cd ~/gotlucky/backend
             echo "Building backend..."
-            go build -o gotlucky-backend cmd/main.go
+            go build -o gotlucky-backend cmd/main.go            
             
-            # 3. Create systemd service
             echo "Configuring systemd service..."
             SERVICE_FILE="/tmp/gotlucky-backend.service"
             cat > $SERVICE_FILE <<EOF

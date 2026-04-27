@@ -62,7 +62,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "frontend/dist/**"
+          source: "frontend/dist"
           target: "~/gotlucky"
 
       - name: Configure Nginx and Deploy on EC2
