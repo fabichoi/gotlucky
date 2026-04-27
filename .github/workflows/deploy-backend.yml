@@ -41,14 +41,25 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-northeast-2
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+
+      - name: Build Backend
+        run: |
+          cd backend
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o gotlucky-backend cmd/main.go
+
       - name: Copy backend files to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "backend/"
-          target: "~/gotlucky"
+          source: "backend/*"
+          target: "/home/ubuntu/gotlucky"
+          overwrite: true
 
       - name: Build and Deploy on EC2
         uses: appleboy/ssh-action@v0.1.6
@@ -60,8 +71,7 @@ jobs:
             set -e
             
             cd ~/gotlucky/backend
-            echo "Building backend..."
-            go build -o gotlucky-backend cmd/main.go            
+            chmod +x gotlucky-backend
             
             echo "Configuring systemd service..."
             SERVICE_FILE="/tmp/gotlucky-backend.service"
