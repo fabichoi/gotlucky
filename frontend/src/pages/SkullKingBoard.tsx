@@ -56,7 +56,7 @@ export default function SkullKingBoard() {
 
     if (prevGameRef.current) {
       const playerIds = Array.from(new Set(game.scores.map(s => s.user_id)));
-      
+
       const isRoundFullyCompleted = (g: SkullKingGame, r: number) => {
         const activeIds = new Set(g.scores.filter(s => s.actual !== -1).map(s => Number(s.user_id)));
         const scores = g.scores.filter(s => s.round === r && activeIds.has(Number(s.user_id)));
@@ -139,16 +139,12 @@ export default function SkullKingBoard() {
     const isCompleted = score && completedRounds.has(r);
     const points = score ? score.points : 0;
     const isSuccess = score && score.bid === score.actual;
-    const isPerfect = isSuccess && score.bid === r; 
+    const isPerfect = isSuccess && score.bid === r;
 
     return (
       <div key={r} className="history-item mb-2 p-2 rounded-3 bg-light border d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-2">
-          <span className="fw-bold text-muted small" style={{ width: "50px" }}>{r} 라운드</span>
-          <div style={{ 
-            width: "6px", height: "6px", borderRadius: "50%", 
-            backgroundColor: isCompleted ? (isSuccess ? '#ef4444' : '#3b82f6') : '#e5e7eb'
-          }} />
+          <span className="fw-bold text-muted small" style={{ width: "40px" }}>R{r}</span>
         </div>
         <div className="d-flex align-items-center gap-3">
           {isCompleted && isPerfect && <span className="badge bg-warning text-dark p-1" style={{ fontSize: "0.6rem" }}>PERFECT</span>}
@@ -167,7 +163,7 @@ export default function SkullKingBoard() {
           <h1 className="fw-bold m-0" style={{ letterSpacing: "-1px" }}>
             💀 SKULL KING <span className="text-accent">LIVE</span>
           </h1>
-          <div className="badge bg-primary px-3 py-2 fs-6">{currentRound} 라운드 {completedRounds.has(currentRound) && "🔒"}</div>
+          <div className="badge bg-primary px-3 py-2 fs-6">{currentRound}R {completedRounds.has(currentRound) && "🔒"}</div>
         </div>
 
         <div className="text-center pt-3 pb-3">
@@ -179,10 +175,10 @@ export default function SkullKingBoard() {
 
               <div className="d-flex flex-column align-items-center text-center" style={{ width: "42%", marginTop: "-15px" }}>
                 <div className="mb-3 fw-bold" style={{ color: 'var(--text-main)', fontSize: '1.2rem' }}>나의 예측</div>
-                <LotteryBall 
-                  value={myScore.bid} 
-                  size="large" 
-                  color={getRankColor(allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0, sortedTotals)} 
+                <LotteryBall
+                  value={myScore.bid}
+                  size="large"
+                  color={getRankColor(allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0, sortedTotals)}
                   className="mb-4"
                 />
                 <div className="d-flex align-items-center justify-content-center gap-2 mt-1">
@@ -228,7 +224,7 @@ export default function SkullKingBoard() {
             <div style={{ fontSize: "3rem", marginBottom: "10px" }}>
               {showRankPopup.rank === 1 ? "👑" : showRankPopup.isUp ? "🚀" : showRankPopup.isUp === false ? "😢" : "👏"}
             </div>
-            <h5 className="fw-bold mb-2 text-accent">{showRankPopup.round} 라운드 종료!</h5>
+            <h5 className="fw-bold mb-2 text-accent">{showRankPopup.round}R 종료!</h5>
             <h3 className="fw-900 mb-4">현재 <span style={{ color: getRankColor(sortedTotals[showRankPopup.rank - 1] || 0, sortedTotals) }}>{showRankPopup.rank}위</span> 입니다</h3>
 
             {showRankPopup.isUp === true && <div className="text-success fw-bold mb-4 fs-5">순위가 올랐습니다! 📈</div>}
