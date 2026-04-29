@@ -99,25 +99,7 @@ func (h *SkullKingHandler) GetHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, games)
 }
 
-func (h *SkullKingHandler) AddPlayer(c *gin.Context) {
-	var input struct {
-		GameID uint `json:"game_id"`
-		UserID uint `json:"user_id"`
-	}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := h.Service.AddPlayer(input.GameID, input.UserID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "player added"})
-}
 
 func (h *SkullKingHandler) DeleteGame(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))

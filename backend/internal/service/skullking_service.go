@@ -133,29 +133,7 @@ func (s *SkullKingService) DeleteGame(gameID uint) error {
 	})
 }
 
-func (s *SkullKingService) AddPlayer(gameID, userID uint) error {
-	// Check if already in game
-	var count int64
-	s.DB.Model(&model.SkullKingScore{}).Where("game_id = ? AND user_id = ?", gameID, userID).Count(&count)
-	if count > 0 {
-		return errors.New("already in game")
-	}
 
-	// Initialize 10 rounds for this user
-	for round := 1; round <= 10; round++ {
-		score := model.SkullKingScore{
-			GameID: gameID,
-			Round:  round,
-			UserID: userID,
-			Bid:    0,
-			Actual: -1,
-		}
-		if err := s.DB.Create(&score).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 func (s *SkullKingService) EndGame(gameID uint) error {
 	return s.DB.Model(&model.SkullKingGame{}).Where("id = ?", gameID).Update("is_active", false).Error

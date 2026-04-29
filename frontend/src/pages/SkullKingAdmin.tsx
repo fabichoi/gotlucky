@@ -1,79 +1,74 @@
-import { useState, useEffect } from "react";
-import { fetchUsers, createSkullKingGame, fetchActiveSkullKingGame, updateSkullKingScore, addPlayerToSkullKingGame, endSkullKingGame } from "../api/gameApi";
+import { useState, useEffect, useCallback } from "react";
+import {
+  fetchUsers,
+  createSkullKingGame,
+  fetchActiveSkullKingGame,
+  updateSkullKingScore,
+  endSkullKingGame,
+} from "../api/gameApi";
 import LoadingSpinner from "../components/LoadingSpinner";
-
-function CompactStepper({ id, initialValue, min, max, step = 1, isBonus = false }: any) {
-  const [value, setValue] = useState<number | string>(initialValue === -1 ? "" : initialValue);
-
-  useEffect(() => {
-    setValue(initialValue === -1 ? "" : initialValue);
-  }, [initialValue]);
-
-  const adjust = (amount: number) => {
-    let current = value === "" ? 0 : Number(value);
-    let next = current + amount;
-    if (next < min) next = min;
-    if (next > max) next = max;
-    setValue(next);
-  };
-
-  return (
-    <div className="d-flex align-items-center justify-content-between bg-white rounded-pill shadow-sm p-1 border" style={{ width: "100%", maxWidth: "125px", margin: "0 auto" }}>
-      <button
-        className="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
-        style={{ width: "36px", height: "36px", fontWeight: "900", color: "var(--text-main)", fontSize: "1.2rem", padding: 0 }}
-        type="button"
-        onClick={() => adjust(-step)}
-      >
-        −
-      </button>
-      <input
-        type="number"
-        id={id}
-        className="form-control border-0 p-0 text-center fw-900 bg-transparent"
-        style={{ width: isBonus ? "36px" : "30px", fontSize: isBonus ? "0.95rem" : "1.2rem", color: "var(--text-main)" }}
-        value={value}
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val === "") {
-            setValue("");
-          } else {
-            const num = parseInt(val);
-            if (!isNaN(num)) setValue(num);
-          }
-        }}
-      />
-      <button
-        className="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
-        style={{ width: "36px", height: "36px", fontWeight: "900", color: "var(--text-main)", fontSize: "1.2rem", padding: 0 }}
-        type="button"
-        onClick={() => adjust(step)}
-      >
-        +
-      </button>
-    </div>
-  );
-}
+import { SkullKingGame, User, PlayerTotal, PlayerScore } from "../types/skullKing";
+import {
+  calculatePlayerTotals,
+  getCompletedRounds,
+  getRankColor,
+} from "../utils/skullKingUtils";
+import CompactStepper from "../components/skullking/CompactStepper";
+import RankBadge from "../components/skullking/RankBadge";
+import RoundQuickSelector from "../components/skullking/RoundQuickSelector";
+import SkullKingModal from "../components/skullking/SkullKingModal";
 
 export default function SkullKingAdmin() {
-  const [activeGame, setActiveGame] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [activeGame, setActiveGame] = useState<SkullKingGame | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const [sharedRounds, setSharedRounds] = useState<Set<number>>(new Set());
   const [selectedRound, setSelectedRound] = useState<number>(1);
-  const [modalConfig, setModalConfig] = useState<{ message: string; onConfirm?: () => void } | null>(null);
+  const [modalConfig, setModalConfig] = useState<{
+    message: string;
+    onConfirm?: () => void;
+    title?: string;
+  } | null>(null);
 
-  const showAlert = (message: string) => setModalConfig({ message });
-  const showConfirm = (message: string, onConfirm: () => void) => setModalConfig({ message, onConfirm });
+  // Local state for current round inputs to avoid DOM access
+  const [roundInputs, setRoundInputs] = useState<Record<number, { bid: number; actual: number | string; bonus: number }>>({});
+
+  const showAlert = (message: string, title?: string) => setModalConfig({ message, title });
+  const showConfirm = (message: string, onConfirm: () => void, title?: string) =>
+    setModalConfig({ message, onConfirm, title });
+
+  const refreshGameData = useCallback(async () => {
+    try {
+      const gameData = await fetchActiveSkullKingGame();
+      setActiveGame(gameData);
+
+      // Initialize inputs from game data
+      if (gameData) {
+        const newInputs: typeof roundInputs = {};
+        gameData.scores.forEach((s: PlayerScore) => {
+          if (s.round === selectedRound) {
+            newInputs[s.user_id] = {
+              bid: s.bid || 0,
+              actual: s.actual === -1 ? 0 : s.actual,
+              bonus: s.bonus || 0,
+            };
+          }
+        });
+        setRoundInputs(newInputs);
+      }
+    } catch (err) {
+      console.error("Failed to refresh game data:", err);
+    }
+  }, [selectedRound]);
 
   useEffect(() => {
     const init = async () => {
       try {
         const [gameData, userData] = await Promise.all([
           fetchActiveSkullKingGame(),
-          fetchUsers()
+          fetchUsers(),
         ]);
         setActiveGame(gameData);
         setUsers(userData);
@@ -86,31 +81,53 @@ export default function SkullKingAdmin() {
     init();
   }, []);
 
+  const [hasSetInitialRound, setHasSetInitialRound] = useState(false);
+
   useEffect(() => {
-    if (activeGame && activeGame.scores) {
+    if (activeGame && activeGame.scores && !hasSetInitialRound) {
       let defaultRound = 1;
       for (let r = 1; r <= 10; r++) {
-        const roundScores = activeGame.scores.filter((s: any) => s.round === r);
-        if (roundScores.length > 0 && roundScores.some((s: any) => s.actual === -1)) {
+        const roundScores = activeGame.scores.filter((s) => s.round === r);
+        if (
+          roundScores.length > 0 &&
+          roundScores.some((s) => s.actual === -1)
+        ) {
           defaultRound = r;
           break;
         }
         if (r === 10) defaultRound = 10;
       }
       setSelectedRound(defaultRound);
+      setHasSetInitialRound(true);
     }
-  }, [activeGame]);
+  }, [activeGame, hasSetInitialRound]);
+
+  // Sync inputs when round or activeGame changes
+  useEffect(() => {
+    if (activeGame) {
+      const newInputs: typeof roundInputs = {};
+      activeGame.scores.forEach((s) => {
+        if (s.round === selectedRound) {
+          newInputs[s.user_id] = {
+            bid: s.bid || 0,
+            actual: s.actual === -1 ? 0 : s.actual,
+            bonus: s.bonus || 0,
+          };
+        }
+      });
+      setRoundInputs(newInputs);
+    }
+  }, [selectedRound, activeGame?.id]); // Only re-sync on round change or game change
 
   const handleStartGame = async () => {
     if (selectedUserIds.length < 2) {
       showAlert("최소 2명의 플레이어가 필요합니다.");
       return;
     }
-    setLoadingTarget('start_game');
+    setLoadingTarget("start_game");
     try {
       await createSkullKingGame(selectedUserIds);
-      const fullGame = await fetchActiveSkullKingGame(); // Get with scores
-      setActiveGame(fullGame);
+      await refreshGameData();
     } catch (err) {
       showAlert("게임 시작 실패");
     } finally {
@@ -118,18 +135,30 @@ export default function SkullKingAdmin() {
     }
   };
 
-  const handleSaveRound = async (round: number) => {
-    // Get players logic inside since we're using activeGame state directly
-    const players = Array.from(new Set(activeGame.scores.map((s: any) => s.user_id))).map((id: any) => {
-      return activeGame.scores.find((s: any) => s.user_id === id)?.user;
+  const updateInput = (userId: number, field: keyof typeof roundInputs[number], value: any) => {
+    setRoundInputs(prev => ({
+      ...prev,
+      [userId]: {
+        ...(prev[userId] || { bid: 0, actual: "", bonus: 0 }),
+        [field]: value
+      }
+    }));
+  };
+
+  const executeSaveRound = async (round: number) => {
+    const players = Array.from(
+      new Set(activeGame!.scores.map((s) => s.user_id))
+    ).map((id) => {
+      return activeGame!.scores.find((s) => s.user_id === id)?.user;
     });
 
     const invalidPlayers: string[] = [];
-    players.forEach(p => {
-      const bid = parseInt((document.getElementById(`bid-${round}-${p.id}`) as HTMLInputElement).value) || 0;
-      const actualVal = (document.getElementById(`actual-${round}-${p.id}`) as HTMLInputElement).value;
-      const actual = actualVal === "" ? -1 : parseInt(actualVal);
-      const bonus = parseInt((document.getElementById(`bonus-${round}-${p.id}`) as HTMLInputElement).value) || 0;
+    players.forEach((p) => {
+      if (!p) return;
+      const inputs = roundInputs[p.id] || { bid: 0, actual: 0, bonus: 0 };
+      const actual = Number(inputs.actual);
+      const bid = inputs.bid;
+      const bonus = inputs.bonus;
 
       if (actual !== -1) {
         if (bid !== actual && bonus > 0) {
@@ -141,32 +170,37 @@ export default function SkullKingAdmin() {
     });
 
     if (invalidPlayers.length > 0) {
-      showAlert(`예측에 실패한 플레이어는 보너스 점수를 받을 수 없습니다:\n${invalidPlayers.join(", ")}`);
+      showAlert(
+        `예측에 실패한 플레이어는 보너스 점수를 받을 수 없습니다:\n${invalidPlayers.join(
+          ", "
+        )}`
+      );
       return;
     }
 
     setLoadingTarget(`save_round_${round}`);
     try {
-      const updatePromises = players.map(p => {
-        const bid = parseInt((document.getElementById(`bid-${round}-${p.id}`) as HTMLInputElement).value) || 0;
-        const actualVal = (document.getElementById(`actual-${round}-${p.id}`) as HTMLInputElement).value;
-        const actual = actualVal === "" ? -1 : parseInt(actualVal);
-        const bonus = parseInt((document.getElementById(`bonus-${round}-${p.id}`) as HTMLInputElement).value) || 0;
+      const updatePromises = players.map((p) => {
+        if (!p) return Promise.resolve();
+        const inputs = roundInputs[p.id] || { bid: 0, actual: 0, bonus: 0 };
+        const actual = Number(inputs.actual);
 
         return updateSkullKingScore({
-          game_id: activeGame.id,
+          game_id: activeGame!.id,
           user_id: p.id,
           round,
-          bid,
+          bid: inputs.bid,
           actual,
-          bonus
+          bonus: inputs.bonus,
         });
       });
 
       await Promise.all(updatePromises);
-      const updatedGame = await fetchActiveSkullKingGame();
-      setActiveGame(updatedGame);
+      await refreshGameData();
       showAlert(`${round} 라운드 저장 완료!`);
+      if (round < 10) {
+        setSelectedRound(round + 1);
+      }
     } catch (err) {
       showAlert("라운드 저장 실패");
     } finally {
@@ -174,33 +208,51 @@ export default function SkullKingAdmin() {
     }
   };
 
-  const handleSaveBidsOnly = async (round: number) => {
-    const players = Array.from(new Set(activeGame.scores.map((s: any) => s.user_id))).map((id: any) => {
-      return activeGame.scores.find((s: any) => s.user_id === id)?.user;
+  const handleSaveRound = async (round: number) => {
+    const isCompleted = activeGame!.scores
+      .filter((s) => s.round === round)
+      .every((s) => s.actual !== -1);
+
+    if (isCompleted) {
+      showConfirm(
+        `${round} 라운드 결과가 이미 저장되어 있습니다.\n다시 저장하시겠습니까?`,
+        () => executeSaveRound(round)
+      );
+    } else {
+      executeSaveRound(round);
+    }
+  };
+
+  const executeSaveBidsOnly = async (round: number) => {
+    const players = Array.from(
+      new Set(activeGame!.scores.map((s) => s.user_id))
+    ).map((id) => {
+      return activeGame!.scores.find((s) => s.user_id === id)?.user;
     });
 
     setLoadingTarget(`save_bids_${round}`);
     try {
-      const updatePromises = players.map(p => {
-        const bid = parseInt((document.getElementById(`bid-${round}-${p.id}`) as HTMLInputElement).value) || 0;
-        const score = activeGame.scores.find((s: any) => s.round === round && s.user_id === p.id);
+      const updatePromises = players.map((p) => {
+        if (!p) return Promise.resolve();
+        const inputs = roundInputs[p.id] || { bid: 0, actual: -1, bonus: 0 };
+        const score = activeGame!.scores.find(
+          (s) => s.round === round && s.user_id === p.id
+        );
         const actual = score?.actual !== -1 && score?.actual !== undefined ? score.actual : -1;
-        const bonus = score?.bonus !== undefined ? score.bonus : 0;
 
         return updateSkullKingScore({
-          game_id: activeGame.id,
+          game_id: activeGame!.id,
           user_id: p.id,
           round,
-          bid,
+          bid: inputs.bid,
           actual,
-          bonus
+          bonus: inputs.bonus,
         });
       });
 
       await Promise.all(updatePromises);
-      const updatedGame = await fetchActiveSkullKingGame();
-      setActiveGame(updatedGame);
-      setSharedRounds(prev => new Set(prev).add(round));
+      await refreshGameData();
+      setSharedRounds((prev) => new Set(prev).add(round));
       showAlert(`${round} 라운드 예측이 확정되었습니다!`);
     } catch (err) {
       showAlert("예측 확정 실패");
@@ -209,24 +261,27 @@ export default function SkullKingAdmin() {
     }
   };
 
-  const handleAddPlayer = async (userId: number) => {
-    setLoadingTarget('add_player');
-    try {
-      await addPlayerToSkullKingGame(activeGame.id, userId);
-      const updatedGame = await fetchActiveSkullKingGame();
-      setActiveGame(updatedGame);
-      showAlert("플레이어가 추가되었습니다.");
-    } catch (err: any) {
-      showAlert(err.message || "플레이어 추가 실패");
-    } finally {
-      setLoadingTarget(null);
+  const handleSaveBidsOnly = async (round: number) => {
+    const isCompleted = activeGame!.scores
+      .filter((s) => s.round === round)
+      .every((s) => s.actual !== -1);
+
+    if (sharedRounds.has(round) || isCompleted) {
+      showConfirm(
+        `${round} 라운드 예측이 이미 확정되었거나 결과가 존재합니다.\n다시 확정하시겠습니까?`,
+        () => executeSaveBidsOnly(round)
+      );
+    } else {
+      executeSaveBidsOnly(round);
     }
   };
+
+
 
   const handleEndGame = async () => {
     showConfirm("게임을 종료하시겠습니까?", async () => {
       try {
-        await endSkullKingGame(activeGame.id);
+        await endSkullKingGame(activeGame!.id);
         setActiveGame(null);
       } catch (err) {
         showAlert("게임 종료 실패");
@@ -237,11 +292,10 @@ export default function SkullKingAdmin() {
   if (isLoading) return <LoadingSpinner />;
 
   if (!activeGame) {
-    const movePlayer = (index: number, direction: 'up' | 'down') => {
+    const movePlayer = (index: number, direction: "up" | "down") => {
       const newList = [...selectedUserIds];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= newList.length) return;
-
       [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
       setSelectedUserIds(newList);
     };
@@ -250,17 +304,17 @@ export default function SkullKingAdmin() {
       <div className="container py-5" style={{ maxWidth: "800px" }}>
         <div className="glass-card p-5">
           <h2 className="fw-bold mb-4">새로운 스컬킹 게임 시작</h2>
-
           <div className="mb-4">
             <label className="form-label fw-bold">플레이어 선택 (선택 순서대로 정렬됨)</label>
             <div className="row g-2 mb-4">
-              {users.map(user => (
+              {users.map((user) => (
                 <div key={user.id} className="col-md-4 col-6">
                   <div
-                    className={`user-select-card p-3 text-center ${selectedUserIds.includes(user.id) ? 'selected' : ''}`}
+                    className={`user-select-card p-3 text-center ${selectedUserIds.includes(user.id) ? "selected" : ""
+                      }`}
                     onClick={() => {
                       if (selectedUserIds.includes(user.id)) {
-                        setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
+                        setSelectedUserIds(selectedUserIds.filter((id) => id !== user.id));
                       } else {
                         setSelectedUserIds([...selectedUserIds, user.id]);
                       }
@@ -276,7 +330,7 @@ export default function SkullKingAdmin() {
               <div className="selected-order-list p-4 bg-light rounded-4">
                 <label className="form-label fw-bold mb-3">플레이어 입장 순서 조절</label>
                 {selectedUserIds.map((id, index) => {
-                  const user = users.find(u => u.id === id);
+                  const user = users.find((u) => u.id === id);
                   return (
                     <div key={id} className="d-flex align-items-center justify-content-between bg-white p-2 mb-2 rounded-3 shadow-sm">
                       <div className="d-flex align-items-center">
@@ -286,14 +340,14 @@ export default function SkullKingAdmin() {
                       <div className="btn-group">
                         <button
                           className="btn btn-sm btn-outline-secondary"
-                          onClick={() => movePlayer(index, 'up')}
+                          onClick={() => movePlayer(index, "up")}
                           disabled={index === 0}
                         >
                           ↑
                         </button>
                         <button
                           className="btn btn-sm btn-outline-secondary"
-                          onClick={() => movePlayer(index, 'down')}
+                          onClick={() => movePlayer(index, "down")}
                           disabled={index === selectedUserIds.length - 1}
                         >
                           ↓
@@ -311,7 +365,7 @@ export default function SkullKingAdmin() {
             onClick={handleStartGame}
             disabled={loadingTarget !== null || selectedUserIds.length < 2}
           >
-            {loadingTarget === 'start_game' ? "게임 생성 중..." : "게임 시작하기"}
+            {loadingTarget === "start_game" ? "게임 생성 중..." : "게임 시작하기"}
           </button>
         </div>
         <style>{`
@@ -332,67 +386,23 @@ export default function SkullKingAdmin() {
     );
   }
 
-  // Active game UI
-  const players = Array.from(new Set(activeGame.scores.map((s: any) => s.user_id))).map((id: any) => {
-    return activeGame.scores.find((s: any) => s.user_id === id)?.user;
+  // Active game UI calculations
+  const players = Array.from(new Set(activeGame.scores.map((s) => s.user_id))).map((id) => {
+    return activeGame.scores.find((s) => s.user_id === id)?.user;
   });
 
-  const allPlayersWithScores = players.map((p: any) => {
-    const total = activeGame.scores
-      .filter((s: any) => s.user_id === p.id && s.actual !== -1)
-      .reduce((sum: number, s: any) => sum + s.points, 0);
-    return { id: p.id, name: p.name, total };
-  });
-
-  const playersInOrder = allPlayersWithScores;
-  const sortedScores = [...allPlayersWithScores].map(p => p.total).sort((a, b) => b - a);
-
-  const getRankColor = (total: number) => {
-    const rankIndex = sortedScores.indexOf(total);
-    const rainbow = ["#ff4d4d", "#ffa64d", "#ffdb4d", "#4dff88", "#4d94ff", "#804dff", "#db4dff"];
-    return rainbow[rankIndex] || "#6c757d";
-  };
-
-  const getRankBadge = (total: number) => {
-    const rankIndex = sortedScores.indexOf(total);
-    const ranks = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
-    const colors = ["#ff4d4d", "#ffa64d", "#ffdb4d", "#4dff88", "#4d94ff", "#804dff", "#db4dff"];
-    return (
-      <span className="rank-badge" style={{ backgroundColor: colors[rankIndex] || "#6c757d" }}>
-        {ranks[rankIndex] || `${rankIndex + 1}th`}
-      </span>
-    );
-  };
+  const completedRounds = getCompletedRounds(activeGame.scores);
+  const allPlayersWithScores = calculatePlayerTotals(activeGame.scores, completedRounds);
+  const sortedTotals = [...allPlayersWithScores].map((p) => p.total).sort((a, b) => b - a);
 
   return (
     <div className="container-fluid py-4 fade-in" style={{ maxWidth: "800px" }}>
       <div className="d-flex justify-content-between align-items-center mb-4 px-2">
-        <div>
-          <h1 className="fw-bold m-0" style={{ letterSpacing: "-1px" }}>
-            💀 SKULL KING <span className="text-accent">ADMIN</span>
-          </h1>
-        </div>
+        <h1 className="fw-bold m-0" style={{ letterSpacing: "-1px" }}>
+          💀 SKULL KING <span className="text-accent">ADMIN</span>
+        </h1>
         <div className="d-flex gap-2">
-          <div className="dropdown">
-            <button className="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-              + 유저
-            </button>
-            <ul className="dropdown-menu dropdown-menu-end p-2" style={{ minWidth: "200px" }}>
-              <li className="dropdown-header">추가할 유저 선택</li>
-              {users
-                .filter(u => !players.some((p: any) => p.id === u.id))
-                .map(user => (
-                  <li key={user.id}>
-                    <button className="dropdown-item rounded-3" onClick={() => handleAddPlayer(user.id)}>
-                      {user.name} 추가
-                    </button>
-                  </li>
-                ))}
-              {users.filter(u => !players.some((p: any) => p.id === u.id)).length === 0 && (
-                <li className="dropdown-item disabled text-muted">추가 가능한 유저 없음</li>
-              )}
-            </ul>
-          </div>
+
           <button className="btn btn-sm btn-outline-danger" onClick={handleEndGame}>종료</button>
         </div>
       </div>
@@ -401,16 +411,20 @@ export default function SkullKingAdmin() {
         <button
           className="btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center"
           style={{ width: "45px", height: "45px", fontWeight: "900", fontSize: "1.2rem" }}
-          onClick={() => setSelectedRound(r => Math.max(1, r - 1))}
+          onClick={() => setSelectedRound((r) => Math.max(1, r - 1))}
           disabled={selectedRound === 1}
         >
           {"<"}
         </button>
-        <h4 className="fw-bold m-0 text-accent">Round {selectedRound}</h4>
+        <div className="text-center">
+          <h4 className="fw-bold m-0 text-accent">
+            {selectedRound} 라운드 {completedRounds.has(selectedRound) && "🔒"}
+          </h4>
+        </div>
         <button
           className="btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center"
           style={{ width: "45px", height: "45px", fontWeight: "900", fontSize: "1.2rem" }}
-          onClick={() => setSelectedRound(r => Math.min(10, r + 1))}
+          onClick={() => setSelectedRound((r) => Math.min(10, r + 1))}
           disabled={selectedRound === 10}
         >
           {">"}
@@ -418,53 +432,54 @@ export default function SkullKingAdmin() {
       </div>
 
       <div className="row g-2 px-2">
-        {playersInOrder.map((p: any) => {
-          const score = activeGame.scores.find((s: any) => s.round === selectedRound && s.user_id === p.id);
+        {allPlayersWithScores.map((p) => {
+          const score = activeGame.scores.find((s) => s.round === selectedRound && s.user_id === p.id);
+          const inputs = roundInputs[p.id] || { bid: 0, actual: 0, bonus: 0 };
           return (
             <div key={p.id} className="col-6 col-md-4 col-lg-3">
               <div className="glass-card p-2 mb-2 border-0 shadow-sm position-relative overflow-hidden h-100" style={{ borderRadius: "20px" }}>
-
-                {/* Top Row: User + Bid */}
                 <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                   <div className="d-flex flex-column align-items-center justify-content-center w-50">
                     <div className="d-flex align-items-center justify-content-center gap-1 mb-1">
-                      {getRankBadge(p.total)}
+                      <RankBadge total={p.total} sortedTotals={sortedTotals} />
                       <span className="fw-bold text-truncate" style={{ color: "var(--text-main)", maxWidth: "65px", fontSize: "0.95rem" }}>{p.name}</span>
                     </div>
-                    <div className="fw-900" style={{ color: getRankColor(p.total), fontSize: "1.05rem" }}>{p.total} pts</div>
+                    <div className="fw-900" style={{ color: getRankColor(p.total, sortedTotals), fontSize: "1.05rem" }}>{p.total} pts</div>
                   </div>
 
                   <div className="d-flex flex-column align-items-center w-50">
                     <div className="small text-muted mb-1 fw-bold" style={{ fontSize: "0.7rem" }}>예측(Bid)</div>
                     <CompactStepper
                       id={`bid-${selectedRound}-${p.id}`}
-                      initialValue={score?.bid || 0}
+                      initialValue={inputs.bid}
                       min={0}
                       max={10}
+                      onChange={(val) => updateInput(p.id, "bid", val)}
                     />
                   </div>
                 </div>
 
-                {/* Bottom Row: Bonus + Actual */}
                 <div className="d-flex gap-1 pt-1 text-center">
                   <div className="w-50">
                     <div className="small text-muted mb-1 fw-bold" style={{ fontSize: "0.7rem" }}>보너스</div>
                     <CompactStepper
                       id={`bonus-${selectedRound}-${p.id}`}
-                      initialValue={score?.bonus || 0}
+                      initialValue={inputs.bonus}
                       min={0}
                       max={150}
                       step={10}
                       isBonus={true}
+                      onChange={(val) => updateInput(p.id, "bonus", val)}
                     />
                   </div>
                   <div className="w-50">
                     <div className="small text-muted mb-1 fw-bold" style={{ fontSize: "0.7rem" }}>실제(Actual)</div>
                     <CompactStepper
                       id={`actual-${selectedRound}-${p.id}`}
-                      initialValue={score?.actual === -1 ? 0 : score.actual}
+                      initialValue={Number(inputs.actual)}
                       min={0}
                       max={10}
+                      onChange={(val) => updateInput(p.id, "actual", val)}
                     />
                   </div>
                 </div>
@@ -501,67 +516,18 @@ export default function SkullKingAdmin() {
         </div>
       </div>
 
-      {modalConfig && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ zIndex: 1050, backdropFilter: "blur(5px)", backgroundColor: "rgba(0,0,0,0.4)" }}>
-          <div className="bg-white p-4 rounded-4 shadow-lg text-center mx-3" style={{ minWidth: "300px", maxWidth: "400px", animation: "popIn 0.2s ease-out" }}>
-            <h5 className="fw-bold mb-3" style={{ color: "var(--text-main)" }}>알림</h5>
-            <p className="mb-4 fw-bold text-muted" style={{ whiteSpace: "pre-wrap", fontSize: "0.95rem" }}>{modalConfig.message}</p>
-            <div className="d-flex gap-2 justify-content-center">
-              {modalConfig.onConfirm && (
-                <button className="btn btn-light px-4 py-2 rounded-pill fw-bold" onClick={() => setModalConfig(null)}>취소</button>
-              )}
-              <button 
-                className="btn btn-primary px-4 py-2 rounded-pill fw-bold" 
-                onClick={() => {
-                  if (modalConfig.onConfirm) modalConfig.onConfirm();
-                  setModalConfig(null);
-                }}
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SkullKingModal
+        show={!!modalConfig}
+        message={modalConfig?.message || ""}
+        title={modalConfig?.title}
+        onConfirm={() => {
+          if (modalConfig?.onConfirm) modalConfig.onConfirm();
+          setModalConfig(null);
+        }}
+        onCancel={modalConfig?.onConfirm ? () => setModalConfig(null) : undefined}
+      />
 
-      <style>{`
-        @keyframes popIn {
-          0% { transform: scale(0.9); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        input[type=number] {
-          -moz-appearance: textfield;
-        }
-        .text-accent {
-          color: var(--accent-color);
-        }
-        .fw-900 {
-          font-weight: 900;
-        }
-        .btn-white {
-          background: #ffffff;
-          border: 1px solid rgba(0,0,0,0.05);
-        }
-        .btn-white:hover {
-          background: #f8f9fa;
-        }
-        .btn-white:active {
-          transform: scale(0.95);
-        }
-        .rank-badge {
-          font-size: 0.7rem;
-          font-weight: 800;
-          color: white;
-          padding: 2px 8px;
-          border-radius: 6px;
-          text-transform: uppercase;
-        }
-      `}</style>
+
     </div>
   );
 }

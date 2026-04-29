@@ -250,15 +250,7 @@ export async function updateSkullKingScore(payload: {
   return res.json();
 }
 
-export async function addPlayerToSkullKingGame(gameId: number, userId: number) {
-  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/player`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ game_id: gameId, user_id: userId }),
-  });
-  if (!res.ok) throw new Error("플레이어 추가 실패");
-  return res.json();
-}
+
 
 export async function deleteSkullKingGame(gameId: number) {
   const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/${gameId}`, {

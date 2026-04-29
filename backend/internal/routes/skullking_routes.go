@@ -13,7 +13,7 @@ func RegisterSkullKingRoutes(rg *gin.RouterGroup, h *handler.SkullKingHandler) {
 		sk.GET("/active", h.GetActiveGame)
 		sk.GET("/history", h.GetHistory)
 		sk.POST("/score", h.UpdateScore)
-		sk.POST("/player", h.AddPlayer)
+
 		sk.POST("/end/:id", h.EndGame)
 		sk.DELETE("/:id", h.DeleteGame)
 	}
