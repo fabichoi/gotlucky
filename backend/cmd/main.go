@@ -36,6 +36,7 @@ func main() {
 		&model.LotteryResult{},
 		&model.SkullKingGame{},
 		&model.SkullKingScore{},
+		&model.SkullKingJoinRequest{},
 		&model.InviteCode{},
 	); err != nil {
 		panic("AutoMigrate 실패: " + err.Error())

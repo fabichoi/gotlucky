@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  fetchUsers,
-  createSkullKingGame,
   fetchActiveSkullKingGame,
   updateSkullKingScore,
   endSkullKingGame,
+  createSkullKingGame,
+  startSkullKingGame,
+  approveSkullKingJoin,
+  rejectSkullKingJoin,
 } from "../api/gameApi";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { SkullKingGame, User, PlayerTotal, PlayerScore } from "../types/skullKing";
+import { SkullKingGame, PlayerScore } from "../types/skullKing";
 import {
   calculatePlayerTotals,
   getCompletedRounds,
@@ -15,13 +19,12 @@ import {
 } from "../utils/skullKingUtils";
 import CompactStepper from "../components/skullking/CompactStepper";
 import RankBadge from "../components/skullking/RankBadge";
-import RoundQuickSelector from "../components/skullking/RoundQuickSelector";
 import SkullKingModal from "../components/skullking/SkullKingModal";
 
 export default function SkullKingAdmin() {
+  const navigate = useNavigate();
+  const { user: currentUser } = useUser();
   const [activeGame, setActiveGame] = useState<SkullKingGame | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const [sharedRounds, setSharedRounds] = useState<Set<number>>(new Set());
@@ -39,24 +42,29 @@ export default function SkullKingAdmin() {
   const showConfirm = (message: string, onConfirm: () => void, title?: string) =>
     setModalConfig({ message, onConfirm, title });
 
-  const refreshGameData = useCallback(async () => {
+  const refreshGameData = useCallback(async (force = false) => {
     try {
       const gameData = await fetchActiveSkullKingGame();
       setActiveGame(gameData);
 
       // Initialize inputs from game data
       if (gameData) {
-        const newInputs: typeof roundInputs = {};
-        gameData.scores.forEach((s: PlayerScore) => {
-          if (s.round === selectedRound) {
-            newInputs[s.user_id] = {
-              bid: s.bid || 0,
-              actual: s.actual === -1 ? 0 : s.actual,
-              bonus: s.bonus || 0,
-            };
-          }
+        setRoundInputs(prev => {
+          const newInputs = { ...prev };
+          gameData.scores.forEach((s: PlayerScore) => {
+            if (s.round === selectedRound) {
+              // Overwrite only if force=true, or if the user doesn't exist in current inputs (newly joined)
+              if (force || !newInputs[s.user_id]) {
+                newInputs[s.user_id] = {
+                  bid: s.bid || 0,
+                  actual: s.actual === -1 ? 0 : s.actual,
+                  bonus: s.bonus || 0,
+                };
+              }
+            }
+          });
+          return newInputs;
         });
-        setRoundInputs(newInputs);
       }
     } catch (err) {
       console.error("Failed to refresh game data:", err);
@@ -64,14 +72,18 @@ export default function SkullKingAdmin() {
   }, [selectedRound]);
 
   useEffect(() => {
+    if (activeGame && currentUser && activeGame.host_id !== currentUser.id) {
+      // If not host and not admin, redirect to board
+      if (currentUser.role !== "admin") {
+        navigate("/skull-king");
+      }
+    }
+  }, [activeGame, currentUser, navigate]);
+
+  useEffect(() => {
     const init = async () => {
       try {
-        const [gameData, userData] = await Promise.all([
-          fetchActiveSkullKingGame(),
-          fetchUsers(),
-        ]);
-        setActiveGame(gameData);
-        setUsers(userData);
+        await refreshGameData(true);
       } catch (err) {
         console.error("Initialization failed:", err);
       } finally {
@@ -79,7 +91,10 @@ export default function SkullKingAdmin() {
       }
     };
     init();
-  }, []);
+
+    const interval = setInterval(() => refreshGameData(false), 3000);
+    return () => clearInterval(interval);
+  }, [refreshGameData]);
 
   const [hasSetInitialRound, setHasSetInitialRound] = useState(false);
 
@@ -119,19 +134,50 @@ export default function SkullKingAdmin() {
     }
   }, [selectedRound, activeGame?.id]); // Only re-sync on round change or game change
 
+  const handleCreateRoom = async () => {
+    setLoadingTarget("create_room");
+    try {
+      await createSkullKingGame();
+      await refreshGameData(true);
+    } catch (err) {
+      showAlert("방 생성 실패");
+    } finally {
+      setLoadingTarget(null);
+    }
+  };
+
   const handleStartGame = async () => {
-    if (selectedUserIds.length < 2) {
+    const participants = Array.from(new Set(activeGame!.scores.map(s => s.user_id)));
+    if (participants.length < 2) {
       showAlert("최소 2명의 플레이어가 필요합니다.");
       return;
     }
     setLoadingTarget("start_game");
     try {
-      await createSkullKingGame(selectedUserIds);
-      await refreshGameData();
+      await startSkullKingGame(activeGame!.id);
+      await refreshGameData(true);
     } catch (err) {
       showAlert("게임 시작 실패");
     } finally {
       setLoadingTarget(null);
+    }
+  };
+
+  const handleApprove = async (userId: number) => {
+    try {
+      await approveSkullKingJoin(activeGame!.id, userId);
+      await refreshGameData(true);
+    } catch (err) {
+      showAlert("승인 실패");
+    }
+  };
+
+  const handleReject = async (userId: number) => {
+    try {
+      await rejectSkullKingJoin(activeGame!.id, userId);
+      await refreshGameData(true);
+    } catch (err) {
+      showAlert("거절 실패");
     }
   };
 
@@ -196,7 +242,7 @@ export default function SkullKingAdmin() {
       });
 
       await Promise.all(updatePromises);
-      await refreshGameData();
+      await refreshGameData(true);
       showAlert(`${round} 라운드 저장 완료!`);
       if (round < 10) {
         setSelectedRound(round + 1);
@@ -251,7 +297,7 @@ export default function SkullKingAdmin() {
       });
 
       await Promise.all(updatePromises);
-      await refreshGameData();
+      await refreshGameData(true);
       setSharedRounds((prev) => new Set(prev).add(round));
       showAlert(`${round} 라운드 예측이 확정되었습니다!`);
     } catch (err) {
@@ -291,106 +337,64 @@ export default function SkullKingAdmin() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  if (!activeGame) {
-    const movePlayer = (index: number, direction: "up" | "down") => {
-      const newList = [...selectedUserIds];
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= newList.length) return;
-      [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
-      setSelectedUserIds(newList);
-    };
+  if (!activeGame || activeGame.status === 'waiting') {
+    const participants = activeGame ? Array.from(new Set(activeGame.scores.map(s => s.user_id))).map(id => {
+      return activeGame.scores.find(s => s.user_id === id)?.user;
+    }) : [];
 
     return (
-      <div className="container py-5" style={{ maxWidth: "800px" }}>
+      <div className="container py-5 text-center" style={{ maxWidth: "600px" }}>
         <div className="glass-card p-5">
-          <h2 className="fw-bold mb-4">새로운 스컬킹 게임 시작</h2>
-          <div className="mb-4">
-            <label className="form-label fw-bold">플레이어 선택 (선택 순서대로 정렬됨)</label>
-            <div className="row g-2 mb-4">
-              {users.map((user) => (
-                <div key={user.id} className="col-md-4 col-6">
-                  <div
-                    className={`user-select-card p-3 text-center ${selectedUserIds.includes(user.id) ? "selected" : ""
-                      }`}
-                    onClick={() => {
-                      if (selectedUserIds.includes(user.id)) {
-                        setSelectedUserIds(selectedUserIds.filter((id) => id !== user.id));
-                      } else {
-                        setSelectedUserIds([...selectedUserIds, user.id]);
-                      }
-                    }}
-                  >
-                    {user.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {selectedUserIds.length > 0 && (
-              <div className="selected-order-list p-4 bg-light rounded-4">
-                <label className="form-label fw-bold mb-3">플레이어 입장 순서 조절</label>
-                {selectedUserIds.map((id, index) => {
-                  const user = users.find((u) => u.id === id);
-                  return (
-                    <div key={id} className="d-flex align-items-center justify-content-between bg-white p-2 mb-2 rounded-3 shadow-sm">
-                      <div className="d-flex align-items-center">
-                        <span className="badge bg-dark me-3">{index + 1}</span>
-                        <span className="fw-bold">{user?.name}</span>
+          {!activeGame ? (
+            <>
+              <h2 className="fw-bold mb-4">새로운 스컬킹 방 만들기</h2>
+              <button
+                className="btn btn-primary w-100 py-3 mt-3 fw-bold rounded-4 shadow"
+                onClick={handleCreateRoom}
+                disabled={loadingTarget === "create_room"}
+              >
+                {loadingTarget === "create_room" ? "방 생성 중..." : "방 만들기"}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="badge bg-warning text-dark mb-3 px-3 py-2">입장 대기 중</div>
+              <h2 className="fw-bold mb-2">대기실 관리</h2>
+              <div className="display-4 fw-900 mb-4 text-accent" style={{ letterSpacing: "3px" }}>{activeGame.room_code}</div>
+              
+              <div className="bg-light rounded-4 p-4 mb-4 text-start">
+                <label className="small fw-bold text-muted mb-3 d-block">참여 중인 플레이어 ({participants.length})</label>
+                <div className="d-grid gap-2">
+                  {participants.map((p, idx) => (
+                    <div key={p?.id} className="bg-white p-3 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+                      <div className="fw-bold">
+                        <span className="text-muted me-2">{idx + 1}.</span>
+                        {p?.name}
+                        {p?.id === activeGame.host_id && <span className="badge bg-accent-light text-accent ms-2" style={{fontSize: '0.7rem'}}>방장</span>}
                       </div>
-                      <div className="btn-group">
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => movePlayer(index, "up")}
-                          disabled={index === 0}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => movePlayer(index, "down")}
-                          disabled={index === selectedUserIds.length - 1}
-                        >
-                          ↓
-                        </button>
-                      </div>
+                      <div className="text-success small fw-bold">Ready</div>
                     </div>
-                  );
-                })}
+                  ))}
+                  {participants.length === 0 && <div className="text-center text-muted py-3">플레이어를 기다리고 있습니다...</div>}
+                </div>
               </div>
-            )}
-          </div>
 
-          <button
-            className="btn btn-primary w-100 py-3 mt-3"
-            onClick={handleStartGame}
-            disabled={loadingTarget !== null || selectedUserIds.length < 2}
-          >
-            {loadingTarget === "start_game" ? "게임 생성 중..." : "게임 시작하기"}
-          </button>
+              <button
+                className="btn btn-primary w-100 py-3 mt-2 fw-bold rounded-4 shadow"
+                onClick={handleStartGame}
+                disabled={loadingTarget === "start_game" || participants.length < 2}
+              >
+                {loadingTarget === "start_game" ? "게임 시작 중..." : "게임 시작하기"}
+              </button>
+              {participants.length < 2 && <p className="small text-danger mt-2">최소 2명의 플레이어가 입장해야 합니다.</p>}
+            </>
+          )}
         </div>
-        <style>{`
-          .user-select-card {
-            background: rgba(0,0,0,0.03);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-          }
-          .user-select-card.selected {
-            background: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
-          }
-        `}</style>
       </div>
     );
   }
 
   // Active game UI calculations
-  const players = Array.from(new Set(activeGame.scores.map((s) => s.user_id))).map((id) => {
-    return activeGame.scores.find((s) => s.user_id === id)?.user;
-  });
-
   const completedRounds = getCompletedRounds(activeGame.scores);
   const allPlayersWithScores = calculatePlayerTotals(activeGame.scores, completedRounds);
   const sortedTotals = [...allPlayersWithScores].map((p) => p.total).sort((a, b) => b - a);
@@ -399,10 +403,36 @@ export default function SkullKingAdmin() {
     <div className="container-fluid py-4 fade-in" style={{ maxWidth: "800px" }}>
       <div className="d-flex justify-content-between align-items-center mb-4 px-2">
         <h1 className="fw-bold m-0" style={{ letterSpacing: "-1px" }}>
-          💀 SKULL KING <span className="text-accent">ADMIN</span>
+          💀 SKULL KING <span className="text-accent">MANAGER</span>
         </h1>
         <div className="d-flex gap-2">
-
+          {activeGame.join_requests && activeGame.join_requests.length > 0 && (
+            <div className="dropdown">
+              <button 
+                className="btn btn-sm btn-accent position-relative" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false"
+              >
+                🔔 요청
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {activeGame.join_requests.length}
+                </span>
+              </button>
+              <ul className="dropdown-menu dropdown-menu-end p-3 glass-card shadow-lg border-0" style={{minWidth: '250px'}}>
+                <li className="fw-bold mb-2 small text-muted">새로운 입장 요청</li>
+                {activeGame.join_requests.map(req => (
+                  <li key={req.id} className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <span className="fw-bold small">{req.user.name}</span>
+                    <div className="btn-group">
+                      <button className="btn btn-xs btn-primary py-1 px-2" onClick={() => handleApprove(req.user_id)}>승인</button>
+                      <button className="btn btn-xs btn-outline-danger py-1 px-2" onClick={() => handleReject(req.user_id)}>거절</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <button className="btn btn-sm btn-outline-danger" onClick={handleEndGame}>종료</button>
         </div>
       </div>
@@ -433,7 +463,6 @@ export default function SkullKingAdmin() {
 
       <div className="row g-2 px-2">
         {allPlayersWithScores.map((p) => {
-          const score = activeGame.scores.find((s) => s.round === selectedRound && s.user_id === p.id);
           const inputs = roundInputs[p.id] || { bid: 0, actual: 0, bonus: 0 };
           return (
             <div key={p.id} className="col-6 col-md-4 col-lg-3">

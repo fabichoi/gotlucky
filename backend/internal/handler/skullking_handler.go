@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"gotlucky/internal/model"
 	"gotlucky/internal/service"
@@ -21,8 +22,21 @@ func NewSkullKingHandler(s *service.SkullKingService) *SkullKingHandler {
 }
 
 func (h *SkullKingHandler) CreateGame(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	game, err := h.Service.CreateGame(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, game)
+}
+
+func (h *SkullKingHandler) JoinRoom(c *gin.Context) {
+	userID, _ := c.Get("userID")
 	var input struct {
-		PlayerIDs []uint `json:"player_ids"`
+		RoomCode string `json:"room_code"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -30,13 +44,68 @@ func (h *SkullKingHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	game, err := h.Service.CreateGame(input.PlayerIDs)
-	if err != nil {
+	if err := h.Service.JoinRoom(userID.(uint), input.RoomCode); err != nil {
+		if strings.HasPrefix(err.Error(), "request_sent") {
+			c.JSON(http.StatusAccepted, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "joined successfully"})
+}
+
+func (h *SkullKingHandler) ApproveJoinRequest(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
+	var input struct {
+		GameID uint `json:"game_id"`
+		UserID uint `json:"user_id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.ApproveJoinRequest(input.GameID, requesterID.(uint), input.UserID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, game)
+	c.JSON(http.StatusOK, gin.H{"message": "approved"})
+}
+
+func (h *SkullKingHandler) RejectJoinRequest(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
+	var input struct {
+		GameID uint `json:"game_id"`
+		UserID uint `json:"user_id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.RejectJoinRequest(input.GameID, requesterID.(uint), input.UserID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "rejected"})
+}
+
+func (h *SkullKingHandler) StartGame(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	if err := h.Service.StartGame(uint(id), requesterID.(uint)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "game started"})
 }
 
 func (h *SkullKingHandler) GetActiveGame(c *gin.Context) {
@@ -67,6 +136,7 @@ func (h *SkullKingHandler) GetActiveGame(c *gin.Context) {
 }
 
 func (h *SkullKingHandler) UpdateScore(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
 	var input struct {
 		GameID uint `json:"game_id"`
 		UserID uint `json:"user_id"`
@@ -81,8 +151,12 @@ func (h *SkullKingHandler) UpdateScore(c *gin.Context) {
 		return
 	}
 
-	err := h.Service.UpdateScore(input.GameID, input.UserID, input.Round, input.Bid, input.Actual, input.Bonus)
+	err := h.Service.UpdateScore(input.GameID, input.UserID, requesterID.(uint), input.Round, input.Bid, input.Actual, input.Bonus)
 	if err != nil {
+		if err.Error() == "only room manager can update scores" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -111,10 +185,24 @@ func (h *SkullKingHandler) DeleteGame(c *gin.Context) {
 }
 
 func (h *SkullKingHandler) EndGame(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
 	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.Service.EndGame(uint(id)); err != nil {
+	if err := h.Service.EndGame(uint(id), requesterID.(uint)); err != nil {
+		if err.Error() == "only room manager can end the game" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "game ended"})
+}
+
+func (h *SkullKingHandler) ListWaitingRooms(c *gin.Context) {
+	games, err := h.Service.ListWaitingRooms()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, games)
 }

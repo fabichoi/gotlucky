@@ -17,11 +17,24 @@ export interface PlayerScore {
   user: User;
 }
 
+export interface JoinRequest {
+  id: number;
+  game_id: number;
+  user_id: number;
+  user: User;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface SkullKingGame {
   id: number;
   is_active: boolean;
+  status: 'waiting' | 'playing' | 'finished';
+  room_code: string;
   created_at: string;
+  host_id: number;
+  host?: User;
   scores: PlayerScore[];
+  join_requests?: JoinRequest[];
 }
 
 export interface PlayerTotal {

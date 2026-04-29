@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchActiveSkullKingGame } from "../api/gameApi";
+import { fetchActiveSkullKingGame, createSkullKingGame, joinSkullKingRoom, fetchSkullKingRooms } from "../api/gameApi";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { SkullKingGame, PlayerScore } from "../types/skullKing";
+import SkullKingModal from "../components/skullking/SkullKingModal";
+import { SkullKingGame } from "../types/skullKing";
 import {
   calculatePlayerTotals,
   getCompletedRounds,
@@ -13,11 +15,19 @@ import RankBadge from "../components/skullking/RankBadge";
 import LotteryBall from "../components/skullking/LotteryBall";
 
 export default function SkullKingBoard() {
+  const navigate = useNavigate();
   const [game, setGame] = useState<SkullKingGame | null>(null);
   const { user: currentUser } = useUser();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const fetchingRef = useRef(false);
+
+  const [roomCodeInput, setRoomCodeInput] = useState("");
+  const [waitingRooms, setWaitingRooms] = useState<SkullKingGame[]>([]);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isRequestSent, setIsRequestSent] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{ message: string; title?: string } | null>(null);
+  const showAlert = (message: string, title?: string) => setModalConfig({ message, title });
 
   const [showRankPopup, setShowRankPopup] = useState<{ round: number; rank: number; isUp: boolean | null } | null>(null);
   const prevGameRef = useRef<SkullKingGame | null>(null);
@@ -27,20 +37,28 @@ export default function SkullKingBoard() {
     fetchingRef.current = true;
 
     try {
-      const gameData = await fetchActiveSkullKingGame();
+      const [gameData, roomsData] = await Promise.all([
+        fetchActiveSkullKingGame(),
+        fetchSkullKingRooms(),
+      ]);
 
-      if (!gameData) {
-        setHasError(true);
+      if (gameData) {
+        setGame(gameData);
+        setHasError(false);
+        setIsRequestSent(false); // Clear request state if we are in a game
+      } else {
         setGame(null);
-        return;
       }
-
-      setGame(gameData);
-      setHasError(false);
+      
+      setWaitingRooms(roomsData || []);
     } catch (err: any) {
       console.error("Failed to fetch game:", err);
-      setHasError(true);
-      setGame(null);
+      // Don't set error if it's just 404
+      if (err.message?.includes("404")) {
+        setGame(null);
+      } else {
+        setHasError(true);
+      }
     } finally {
       setIsLoading(false);
       fetchingRef.current = false;
@@ -110,11 +128,176 @@ export default function SkullKingBoard() {
 
   if (isLoading && !game) return <LoadingSpinner />;
 
+  const handleCreateRoom = async () => {
+    try {
+      const newGame = await createSkullKingGame();
+      setGame(newGame);
+      navigate("/skull-king/admin");
+    } catch (err) {
+      showAlert("방 생성에 실패했습니다.");
+    }
+  };
+
+  const handleJoinRoom = async (code: string) => {
+    setIsJoining(true);
+    try {
+      const result = await joinSkullKingRoom(code);
+      if (result && result.status === 202) {
+        setIsRequestSent(true);
+      } else {
+        fetchData();
+      }
+    } catch (err: any) {
+      showAlert(err.message);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  if (isRequestSent && !game) {
+    return (
+      <div className="container py-5 text-center" style={{ maxWidth: "500px" }}>
+        <div className="glass-card p-5">
+          <div className="display-1 mb-4">⏳</div>
+          <h2 className="fw-bold mb-3">입장 요청 전송됨</h2>
+          <p className="text-muted mb-5">
+            이미 게임이 시작되었습니다.<br />
+            방장이 입장을 승인할 때까지 잠시만 기다려주세요.
+          </p>
+          <button className="btn btn-outline-secondary w-100 py-3 rounded-4" onClick={() => setIsRequestSent(false)}>
+            취소하고 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!game) {
     return (
-      <div className="container py-5 text-center">
+      <div className="container py-5 text-center" style={{ maxWidth: "600px" }}>
         <div className="glass-card p-5">
-          <h2 className="text-muted">현재 진행 중인 게임이 없습니다.</h2>
+          <h2 className="fw-bold mb-4">💀 SKULL KING</h2>
+          <p className="text-muted mb-5">현재 진행 중인 게임이 없습니다.</p>
+          
+          <button onClick={handleCreateRoom} className="btn btn-primary w-100 py-3 fw-bold rounded-4 shadow mb-5">
+            새 방 만들기 (방장)
+          </button>
+
+          <div className="text-start mb-4">
+            <label className="fw-bold text-muted small mb-3 px-2">참여 가능한 방 ({waitingRooms.length})</label>
+            <div className="d-grid gap-2">
+              {waitingRooms.map(room => (
+                <div key={room.id} className="bg-light p-3 rounded-4 d-flex justify-content-between align-items-center shadow-sm border">
+                  <div className="text-start">
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                      <span className="fw-bold">👑 {room.host?.name || 'Unknown'}의 방</span>
+                      {room.status === 'playing' ? (
+                        <span className="badge bg-success-light text-success border border-success-subtle" style={{fontSize: '0.6rem'}}>진행 중</span>
+                      ) : (
+                        <span className="badge bg-warning-light text-warning border border-warning-subtle" style={{fontSize: '0.6rem'}}>대기 중</span>
+                      )}
+                    </div>
+                    <div className="small text-muted">입장 코드: <span className="text-accent fw-bold">{room.room_code}</span></div>
+                  </div>
+                  <button 
+                    onClick={() => handleJoinRoom(room.room_code)}
+                    className={`btn btn-sm px-3 py-2 rounded-pill fw-bold ${room.status === 'playing' ? 'btn-outline-primary' : 'btn-accent'}`}
+                    disabled={isJoining}
+                  >
+                    {room.status === 'playing' ? '참여 요청' : '입장하기'}
+                  </button>
+                </div>
+              ))}
+              {waitingRooms.length === 0 && (
+                <div className="text-center py-4 bg-light rounded-4 border border-dashed">
+                  <span className="text-muted small">현재 대기 중인 방이 없습니다.</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="hr-text mb-4">또는 코드 직접 입력</div>
+
+          <form onSubmit={(e) => { e.preventDefault(); handleJoinRoom(roomCodeInput); }}>
+            <div className="mb-3">
+              <input
+                type="text"
+                className="form-control form-control-lg text-center fw-bold"
+                placeholder="코드 입력"
+                value={roomCodeInput}
+                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                maxLength={6}
+                style={{ letterSpacing: "5px", fontSize: "1.2rem" }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn btn-outline-secondary w-100 py-2 fw-bold rounded-4"
+              disabled={isJoining || !roomCodeInput}
+            >
+              입장하기
+            </button>
+          </form>
+        </div>
+
+        <SkullKingModal
+          show={!!modalConfig}
+          message={modalConfig?.message || ""}
+          title={modalConfig?.title}
+          onConfirm={() => setModalConfig(null)}
+        />
+        <style>{`
+          .hr-text {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #adb5bd;
+          }
+          .hr-text::before, .hr-text::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dee2e6;
+          }
+          .hr-text::before { margin-right: .5em; }
+          .hr-text::after { margin-left: .5em; }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (game.status === 'waiting') {
+    const participants = Array.from(new Set(game.scores.map(s => s.user_id))).map(id => {
+      return game.scores.find(s => s.user_id === id)?.user;
+    });
+
+    return (
+      <div className="container py-5 text-center" style={{ maxWidth: "500px" }}>
+        <div className="glass-card p-5">
+          <div className="badge bg-warning text-dark mb-3 px-3 py-2">대기 중...</div>
+          <h2 className="fw-bold mb-2">대기실</h2>
+          <div className="display-4 fw-900 mb-4 text-accent" style={{ letterSpacing: "3px" }}>{game.room_code}</div>
+          <p className="text-muted mb-4">플레이어들이 입장할 때까지 기다려주세요.</p>
+
+          <div className="bg-light rounded-4 p-3 mb-4 text-start">
+            <label className="small fw-bold text-muted mb-2 px-2">참여 중인 플레이어 ({participants.length})</label>
+            <div className="d-flex flex-wrap gap-2">
+              {participants.map(p => (
+                <div key={p?.id} className="badge bg-white text-dark border p-2 rounded-3 shadow-sm">
+                  👤 {p?.name} {p?.id === game.host_id && <span className="text-accent ms-1">👑</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {game.host_id === currentUser?.id ? (
+            <Link to="/skull-king/admin" className="btn btn-primary w-100 py-3 fw-bold rounded-4 shadow">
+              게임 관리 화면으로 이동
+            </Link>
+          ) : (
+            <div className="alert alert-info border-0 rounded-4">
+              방장이 게임을 시작하기를 기다리고 있습니다.
+            </div>
+          )}
         </div>
       </div>
     );
@@ -139,7 +322,6 @@ export default function SkullKingBoard() {
     const isCompleted = score && completedRounds.has(r);
     const points = score ? score.points : 0;
     const isSuccess = score && score.bid === score.actual;
-    const isPerfect = isSuccess && score.bid === r;
 
     return (
       <div key={r} className="history-item mb-2 p-2 rounded-3 bg-light border d-flex justify-content-between align-items-center">
@@ -147,7 +329,6 @@ export default function SkullKingBoard() {
           <span className="fw-bold text-muted small" style={{ width: "40px" }}>R{r}</span>
         </div>
         <div className="d-flex align-items-center gap-3">
-          {isCompleted && isPerfect && <span className="badge bg-warning text-dark p-1" style={{ fontSize: "0.6rem" }}>PERFECT</span>}
           <span className="fw-900" style={{ color: isCompleted ? (points > 0 ? '#ef4444' : points < 0 ? '#3b82f6' : 'var(--text-main)') : '#adb5bd', fontSize: "0.95rem" }}>
             {isCompleted ? (points > 0 ? `+${points}` : points) : '-'}
           </span>
@@ -165,6 +346,14 @@ export default function SkullKingBoard() {
           </h1>
           <div className="badge bg-primary px-3 py-2 fs-6">{currentRound}R {completedRounds.has(currentRound) && "🔒"}</div>
         </div>
+
+        {game.host_id === currentUser?.id && (
+          <div className="mb-4">
+            <Link to="/skull-king/admin" className="btn btn-outline-accent w-100 py-2 fw-bold">
+              🛠️ 게임 관리 (방장 메뉴)
+            </Link>
+          </div>
+        )}
 
         <div className="text-center pt-3 pb-3">
           {myScore && currentUser ? (
@@ -236,7 +425,12 @@ export default function SkullKingBoard() {
         </div>
       )}
 
-
+      <SkullKingModal
+        show={!!modalConfig}
+        message={modalConfig?.message || ""}
+        title={modalConfig?.title}
+        onConfirm={() => setModalConfig(null)}
+      />
     </div>
   );
 }

@@ -28,6 +28,7 @@ export default function PrivateRoute() {
       <Route path="/lottery" element={<Lottery />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/skull-king" element={<SkullKingBoard />} />
+      <Route path="/skull-king/admin" element={<SkullKingAdmin />} />
       <Route path="/skull-king/history" element={<SkullKingHistory />} />
       <Route path="/policy" element={<Policy />} />
       <Route path="/results/:id" element={<Results />} />
@@ -40,7 +41,6 @@ export default function PrivateRoute() {
           <Route path="/admin/manage" element={<ManageGames />} />
           <Route path="/admin/manage/types" element={<ManageGameTypes />} />
           <Route path="/admin/invites" element={<InviteManager />} />
-          <Route path="/admin/skull-king" element={<SkullKingAdmin />} />
           <Route path="/admin" element={<Results />} />
         </>
       )}
