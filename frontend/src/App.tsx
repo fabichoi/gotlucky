@@ -6,12 +6,6 @@ import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import DefaultRoute from "./components/DefaultRoute";
 import LoadingSpinner from "./components/LoadingSpinner";
-import Lottery from "./pages/Lottery";
-import Profile from "./pages/Profile";
-import SkullKingBoard from "./pages/SkullKingBoard";
-import SkullKingAdmin from "./pages/SkullKingAdmin";
-import SkullKingHistory from "./pages/SkullKingHistory";
-import InviteManager from "./pages/InviteManager";
 
 function App() {
   const { user } = useUser();
@@ -59,7 +53,7 @@ function App() {
                       <li><Link className="dropdown-item py-2" to="/admin/manage">🧩 게임 관리</Link></li>
                       <li><Link className="dropdown-item py-2" to="/admin/manage/types">🎲 게임 타입</Link></li>
                       <li><Link className="dropdown-item py-2" to="/admin/invites">🎟️ 초대 코드 관리</Link></li>
-                      <li><Link className="dropdown-item py-2" to="/admin/skull-king">💀 스컬킹 관리</Link></li>
+                      <li><Link className="dropdown-item py-2" to="/admin/invites">🎟️ 초대 코드 관리</Link></li>
                       <li><hr className="dropdown-divider" /></li>
                       <li><Link className="dropdown-item py-2" to="/admin">📊 결과 보기</Link></li>
                     </ul>
@@ -91,12 +85,6 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/lottery" element={<Lottery />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/skull-king" element={<SkullKingBoard />} />
-        <Route path="/skull-king/history" element={<SkullKingHistory />} />
-        <Route path="/admin/skull-king" element={<SkullKingAdmin />} />
-        <Route path="/admin/invites" element={<InviteManager />} />
         <Route
           path="/*"
           element={

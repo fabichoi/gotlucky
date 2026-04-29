@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { fetchSkullKingHistory, deleteSkullKingGame } from "../api/gameApi";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useUser } from "../context/UserContext";
+import { SkullKingGame } from "../types/skullKing";
+import { calculatePlayerTotals, getRankColor } from "../utils/skullKingUtils";
 
 export default function SkullKingHistory() {
   const { user } = useUser();
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<SkullKingGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
 
   const fetchData = async () => {
     try {
@@ -37,30 +40,44 @@ export default function SkullKingHistory() {
 
   return (
     <div className="container py-4 fade-in" style={{ maxWidth: "1000px" }}>
-      <div className="glass-card p-4">
-        <h1 className="fw-bold mb-4">💀 SKULL KING <span className="text-accent">HISTORY</span></h1>
-        
+      <div className="glass-card p-4 shadow-lg">
+        <h1 className="fw-bold mb-4">
+          💀 SKULL KING <span className="text-accent">HISTORY</span>
+        </h1>
+
         {history.length === 0 ? (
           <div className="text-center py-5 text-muted">아직 종료된 게임 기록이 없습니다.</div>
         ) : (
           <div className="list-group gap-3">
             {history.map((game) => {
-              // Group scores by user and calculate totals
-              const playerTotals = Array.from(new Set(game.scores.map((s: any) => s.user_id))).map(id => {
-                const userScores = game.scores.filter((s: any) => s.user_id === id);
-                const total = userScores.reduce((sum: number, s: any) => sum + s.points, 0);
-                return { name: userScores[0]?.user?.name, total };
-              }).sort((a, b) => b.total - a.total);
+              // History games are always finished, so all rounds are completed
+              const completedRounds = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+              const playerTotals = calculatePlayerTotals(game.scores, completedRounds).sort(
+                (a, b) => b.total - a.total
+              );
+              const sortedTotals = playerTotals.map((p) => p.total);
+              const isExpanded = expandedGameId === game.id;
 
               return (
-                <div key={game.id} className="list-group-item glass-card border-0 p-4 shadow-sm position-relative">
+                <div
+                  key={game.id}
+                  className="list-group-item glass-card border-0 p-4 shadow-sm position-relative overflow-hidden"
+                >
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <span className="text-muted small">{new Date(game.created_at).toLocaleString()}</span>
+                    <span className="text-muted small fw-bold">
+                      {new Date(game.created_at).toLocaleString()}
+                    </span>
                     <div className="d-flex align-items-center gap-2">
-                      <span className="badge bg-secondary">FINISHED</span>
+                      <button
+                        className="btn btn-sm btn-light rounded-pill px-3 fw-bold shadow-sm"
+                        onClick={() => setExpandedGameId(isExpanded ? null : game.id)}
+                      >
+                        {isExpanded ? "접기 ▲" : "상세 보기 ▼"}
+                      </button>
+                      <span className="badge bg-secondary rounded-pill px-3">FINISHED</span>
                       {user?.role === "admin" && (
-                        <button 
-                          className="btn btn-outline-danger btn-sm border-0 p-1" 
+                        <button
+                          className="btn btn-outline-danger btn-sm border-0 p-1"
                           onClick={() => handleDelete(game.id)}
                           title="기록 삭제"
                         >
@@ -69,27 +86,91 @@ export default function SkullKingHistory() {
                       )}
                     </div>
                   </div>
-                  <div className="row g-3">
+
+                  <div className="row g-3 mb-2">
                     {playerTotals.map((p, idx) => (
-                      <div key={p.name} className="col-md-3 col-6">
-                        <div className="p-2 rounded-3 bg-light text-center">
-                          <div className="small text-muted">{idx + 1}등</div>
-                          <div className="fw-bold">{p.name}</div>
-                          <div className="text-primary fw-bold">{p.total} pts</div>
+                      <div key={p.id} className="col-md-3 col-6">
+                        <div className="p-2 rounded-4 bg-light text-center border h-100 d-flex flex-column justify-content-center">
+                          <div className="small text-muted fw-bold mb-1">{idx + 1}등</div>
+                          <div className="fw-bold text-truncate mb-1">{p.name}</div>
+                          <div
+                            className="fw-900 fs-5"
+                            style={{ color: getRankColor(p.total, sortedTotals) }}
+                          >
+                            {p.total} pts
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-top fade-in overflow-auto">
+                      <h5 className="fw-bold mb-3">라운드별 상세 점수</h5>
+                      <div className="table-responsive">
+                        <table
+                          className="table table-sm table-hover text-center align-middle"
+                          style={{ minWidth: "600px" }}
+                        >
+                          <thead>
+                            <tr className="table-light">
+                              <th style={{ width: "80px" }}>라운드</th>
+                              {playerTotals.map((p) => (
+                                <th
+                                  key={p.id}
+                                  style={{ color: getRankColor(p.total, sortedTotals) }}
+                                >
+                                  {p.name}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((round) => (
+                              <tr key={round}>
+                                <td className="fw-bold text-muted small">{round} 라운드</td>
+                                {playerTotals.map((p) => {
+                                  const score = game.scores.find(
+                                    (s) => s.user_id === p.id && s.round === round
+                                  );
+                                  const points = score?.points || 0;
+                                  return (
+                                    <td key={p.id}>
+                                      <div className="d-flex flex-column">
+                                        <span
+                                          className="fw-bold"
+                                          style={{
+                                            color:
+                                              points > 0
+                                                ? "#ef4444"
+                                                : points < 0
+                                                ? "#3b82f6"
+                                                : "var(--text-main)",
+                                          }}
+                                        >
+                                          {points > 0 ? `+${points}` : points}
+                                        </span>
+                                        <span className="text-muted" style={{ fontSize: "0.65rem" }}>
+                                          Bid: {score?.bid} / Get: {score?.actual}
+                                        </span>
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
-      <style>{`
-        .text-accent { color: var(--accent-color); }
-        .bg-light { background: rgba(0,0,0,0.03) !important; }
-      `}</style>
+
     </div>
   );
 }

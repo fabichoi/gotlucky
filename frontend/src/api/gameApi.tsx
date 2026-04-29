@@ -207,13 +207,57 @@ export async function getLastPlayedLotteryInfo() {
   return res.json();
 }
 
-export async function createSkullKingGame(playerIds: number[]) {
+export async function createSkullKingGame() {
   const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/game`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ player_ids: playerIds }),
   });
-  if (!res.ok) throw new Error("스컬킹 게임 생성 실패");
+  if (!res.ok) throw new Error("스컬킹 방 생성 실패");
+  return res.json();
+}
+
+export async function joinSkullKingRoom(roomCode: string) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ room_code: roomCode }),
+  });
+  if (res.status === 202) {
+    const data = await res.json();
+    return { status: 202, message: data.message };
+  }
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "방 입장 실패");
+  }
+  return res.json();
+}
+
+export async function approveSkullKingJoin(gameId: number, userId: number) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/join/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ game_id: gameId, user_id: userId }),
+  });
+  if (!res.ok) throw new Error("승인 실패");
+  return res.json();
+}
+
+export async function rejectSkullKingJoin(gameId: number, userId: number) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/join/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ game_id: gameId, user_id: userId }),
+  });
+  if (!res.ok) throw new Error("거절 실패");
+  return res.json();
+}
+
+export async function startSkullKingGame(gameId: number) {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/start/${gameId}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("게임 시작 실패");
   return res.json();
 }
 
@@ -224,6 +268,12 @@ export async function fetchActiveSkullKingGame() {
     if (res.status === 403) throw new Error("403: 참여 권한이 없습니다.");
     throw new Error("스컬킹 게임 불러오기 실패");
   }
+  return res.json();
+}
+
+export async function fetchSkullKingRooms() {
+  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/rooms`);
+  if (!res.ok) throw new Error("방 목록 불러오기 실패");
   return res.json();
 }
 
@@ -250,15 +300,7 @@ export async function updateSkullKingScore(payload: {
   return res.json();
 }
 
-export async function addPlayerToSkullKingGame(gameId: number, userId: number) {
-  const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/player`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ game_id: gameId, user_id: userId }),
-  });
-  if (!res.ok) throw new Error("플레이어 추가 실패");
-  return res.json();
-}
+
 
 export async function deleteSkullKingGame(gameId: number) {
   const res = await fetchWithAuth(`${API_BASE_URL}/v1/skullking/${gameId}`, {
