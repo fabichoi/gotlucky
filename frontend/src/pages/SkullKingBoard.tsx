@@ -321,8 +321,6 @@ export default function SkullKingBoard() {
     const score = game.scores.find(s => s.round === r && s.user_id === currentUser?.id);
     const isCompleted = score && completedRounds.has(r);
     const points = score ? score.points : 0;
-    const isSuccess = score && score.bid === score.actual;
-
     return (
       <div key={r} className="history-item mb-2 p-2 rounded-3 bg-light border d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-2">
