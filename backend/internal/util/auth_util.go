@@ -8,7 +8,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte("your_secret_key") // 추후 환경변수로 분리
+var jwtKey []byte
+
+func InitJWTKey(secret string) {
+	jwtKey = []byte(secret)
+}
 
 type Claims struct {
 	UserID uint

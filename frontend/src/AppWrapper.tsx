@@ -18,7 +18,10 @@ export default function AppWrapper() {
 
     getCurrentUser()
       .then(setUser)
-      .catch(() => setUser(null));
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+      });
   }, []);
 
   return (

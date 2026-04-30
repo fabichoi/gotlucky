@@ -36,19 +36,26 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 
-		claims, err := util.ValidateJWT(token)
-		if err != nil {
+		if _, err := util.ValidateJWT(token); err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
 		}
 
 		var authToken model.AuthToken
 		if err := db.Where("token = ? AND expires_at > ?", token, time.Now()).First(&authToken).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization failed"})
 			return
 		}
 
-		c.Set("userID", claims.UserID)
-		c.Set("email", claims.Email)
+		var user model.User
+		if err := db.First(&user, authToken.UserID).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization failed"})
+			return
+		}
+
+		c.Set("userID", user.ID)
+		c.Set("email", user.Email)
+		c.Set("role", user.Role)
 
 		c.Next()
 	}

@@ -2,9 +2,18 @@ import { useState, useEffect } from "react";
 import { fetchInvites, generateInvite } from "../api/gameApi";
 import LoadingSpinner from "../components/LoadingSpinner";
 
+interface InviteCode {
+  id: number;
+  code: string;
+  is_used: boolean;
+  created_at: string;
+  user?: { name: string };
+}
+
 export default function InviteManager() {
-  const [codes, setCodes] = useState<any[]>([]);
+  const [codes, setCodes] = useState<InviteCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const loadCodes = async () => {
     try {
@@ -24,15 +33,20 @@ export default function InviteManager() {
   const handleGenerate = async () => {
     try {
       await generateInvite();
-      loadCodes();
-    } catch (err) {
-      alert("코드 생성 실패");
+      await loadCodes();
+      setMessage({ type: "success", text: "새 코드가 생성되었습니다." });
+    } catch {
+      setMessage({ type: "error", text: "코드 생성에 실패했습니다." });
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("코드가 복사되었습니다: " + text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setMessage({ type: "success", text: `코드가 복사되었습니다: ${text}` });
+    } catch {
+      setMessage({ type: "error", text: "복사에 실패했습니다. 직접 선택해 복사해 주세요." });
+    }
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -40,10 +54,15 @@ export default function InviteManager() {
   return (
     <div className="container py-5" style={{ maxWidth: "800px" }}>
       <div className="glass-card p-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="fw-bold m-0">초대 코드 관리</h2>
           <button className="btn btn-primary" onClick={handleGenerate}>새 코드 생성</button>
         </div>
+        {message && (
+          <div className={`alert alert-${message.type === "success" ? "success" : "danger"} py-2 mb-3`}>
+            {message.text}
+          </div>
+        )}
 
         <div className="table-responsive">
           <table className="table table-hover align-middle">
