@@ -54,8 +54,10 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	RegisterAuthRoutes(api, authHandler)
 
 	inviteHandler := handler.NewInviteHandler(inviteRepo)
-	api.POST("/admin/invites", inviteHandler.GenerateCode)
-	api.GET("/admin/invites", inviteHandler.ListCodes)
+	adminGroup := api.Group("/admin")
+	adminGroup.Use(middleware.AdminMiddleware())
+	adminGroup.POST("/invites", inviteHandler.GenerateCode)
+	adminGroup.GET("/invites", inviteHandler.ListCodes)
 
 	lotteryRepo := repository.NewLotteryRepository(db)
 	lotteryService := service.NewLotteryService(userRepo, lotteryRepo)

@@ -176,8 +176,13 @@ func (h *SkullKingHandler) GetHistory(c *gin.Context) {
 
 
 func (h *SkullKingHandler) DeleteGame(c *gin.Context) {
+	requesterID, _ := c.Get("userID")
 	id, _ := strconv.Atoi(c.Param("id"))
-	if err := h.Service.DeleteGame(uint(id)); err != nil {
+	if err := h.Service.DeleteGame(uint(id), requesterID.(uint)); err != nil {
+		if err.Error() == "only host can delete the game" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

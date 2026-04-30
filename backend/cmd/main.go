@@ -17,6 +17,12 @@ func main() {
 		log.Println(".env 파일 로드 실패 (무시하고 계속 진행)")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET 환경변수가 설정되지 않았습니다")
+	}
+	util.InitJWTKey(jwtSecret)
+
 	cfg := database.DBConfig{
 		Path: os.Getenv("DB_PATH"),
 	}

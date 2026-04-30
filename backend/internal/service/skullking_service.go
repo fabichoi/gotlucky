@@ -291,13 +291,19 @@ func (s *SkullKingService) GetHistory() ([]model.SkullKingGame, error) {
 	return games, err
 }
 
-func (s *SkullKingService) DeleteGame(gameID uint) error {
+func (s *SkullKingService) DeleteGame(gameID, requesterID uint) error {
+	var game model.SkullKingGame
+	if err := s.DB.First(&game, gameID).Error; err != nil {
+		return err
+	}
+	if game.HostID != requesterID {
+		return errors.New("only host can delete the game")
+	}
+
 	return s.DB.Transaction(func(tx *gorm.DB) error {
-		// Delete scores first
 		if err := tx.Where("game_id = ?", gameID).Delete(&model.SkullKingScore{}).Error; err != nil {
 			return err
 		}
-		// Delete game
 		if err := tx.Delete(&model.SkullKingGame{}, gameID).Error; err != nil {
 			return err
 		}
