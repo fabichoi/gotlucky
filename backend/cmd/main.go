@@ -43,7 +43,13 @@ func main() {
 		&model.SkullKingGame{},
 		&model.SkullKingScore{},
 		&model.SkullKingJoinRequest{},
+		&model.WizardGame{},
+		&model.WizardJoinRequest{},
+		&model.WizardScore{},
 		&model.InviteCode{},
+		&model.LadderGame{},
+		&model.LadderParticipant{},
+		&model.LadderResult{},
 	); err != nil {
 		panic("AutoMigrate 실패: " + err.Error())
 	}

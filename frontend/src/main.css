@@ -33,10 +33,12 @@ body {
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1080 !important;
+  overflow: visible !important;
 }
 
 /* Button Refinement */
@@ -57,12 +59,32 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg) !important;
 }
 
 /* Navbar specific */
@@ -86,22 +108,74 @@ body {
   color: var(--text-main) !important;
 }
 
-@media (max-width: 576px) {
-  .navbar-brand {
-    font-size: 1rem !important;
+.gn-nav-list {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.2rem;
+  overflow: visible !important;
+}
+
+.gn-link {
+  font-size: 0.9rem !important;
+  font-weight: 600;
+  padding: 0.5rem 0.6rem !important;
+  color: var(--text-main) !important;
+  white-space: nowrap !important;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s ease;
+}
+
+.gn-link:hover {
+  opacity: 0.7;
+}
+
+.gn-icon {
+  font-size: 1.1rem;
+  margin-right: 2px;
+}
+
+.gn-icon-only {
+  font-size: 1.2rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.gn-badge {
+  font-size: 0.8rem !important;
+  padding: 0.4rem 0.75rem !important;
+}
+
+@media (max-width: 768px) {
+  .gn-nav-list {
+    overflow: visible !important;
+    flex-grow: 1;
   }
-  .small-nav-link {
-    font-size: 0.75rem;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+  
+  .gn-link {
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.4rem !important;
   }
-  .navbar {
-    padding: 0.5rem 0.25rem !important;
-  }
-  .gap-1 {
-    gap: 0.25rem !important;
+  
+  .gn-icon-only {
+    padding: 0.4rem 0.5rem !important;
   }
 }
+
+@media (max-width: 360px) {
+  .gn-text {
+    display: none;
+  }
+  .navbar-brand span {
+    display: none;
+  }
+  .navbar-brand {
+    font-size: 0.95rem !important;
+  }
+}
+
 /* Skull King Specific Styles */
 .text-accent {
   color: var(--accent-color) !important;
@@ -154,8 +228,15 @@ body {
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .pop-in {
@@ -172,6 +253,7 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
 .btn-xs {
   padding: 0.1rem 0.4rem;
   font-size: 0.75rem;

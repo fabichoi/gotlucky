@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { updateUser, deleteUser } from "../api/gameApi";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { updateUser, deleteUser, fetchUserStats } from "../api/gameApi";
 import { useUser } from "../context/UserContext";
+import { UserStats } from "../types/user";
 
 interface ProfileForm {
   name: string;
@@ -16,6 +17,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
   const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -28,6 +30,18 @@ export default function Profile() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data = await fetchUserStats();
+        setStats(data);
+      } catch (err) {
+        console.error("Failed to load stats", err);
+      }
+    };
+    loadStats();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -120,11 +134,11 @@ export default function Profile() {
   };
 
   return (
-    <div className="container py-5 fade-in" style={{ maxWidth: "800px" }}>
+    <div className="container py-5 fade-in" style={{ maxWidth: "1000px" }}>
       <div className="d-flex justify-content-between align-items-end mb-4">
         <div>
           <h1 className="fw-bold mb-0" style={{ letterSpacing: "-1px" }}>📕 내 정보 관리</h1>
-          <p className="text-muted mb-0">계정 정보 및 보안 설정을 관리하세요</p>
+          <p className="text-muted mb-0">계정 정보 및 게임 전적을 확인하세요</p>
         </div>
         {message && (
           <div
@@ -225,6 +239,123 @@ export default function Profile() {
               {isLoading ? "변경 사항 저장 중..." : "프로필 업데이트"}
             </button>
           </form>
+        </div>
+
+        {/* Game Stats Section */}
+        <div className="col-12 mt-4">
+          <div className="glass-card p-4">
+            <h5 className="fw-bold mb-4 border-bottom pb-2">🎮 게임 전적 통계</h5>
+            {stats ? (
+              <div className="row g-4">
+                {/* Skull King Stats */}
+                <div className="col-md-6">
+                  <div className="p-4 rounded-4 bg-light border border-opacity-10 h-100">
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <div className="d-flex align-items-center">
+                        <span className="fs-4 me-2">💀</span>
+                        <h6 className="fw-bold mb-0">스컬킹 (Skull King)</h6>
+                      </div>
+                      <Link to="/skull-king/history" className="btn btn-sm btn-outline-primary py-1 px-3" style={{ fontSize: '0.8rem', borderRadius: '20px' }}>
+                        상세 보기
+                      </Link>
+                    </div>
+                    <div className="row g-2 text-center">
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">판수</div>
+                          <div className="fw-bold">{stats.skull_king.total_games}</div>
+                        </div>
+                      </div>
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">승리(1등)</div>
+                          <div className="fw-bold text-primary">{stats.skull_king.win_count}</div>
+                        </div>
+                      </div>
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">승률</div>
+                          <div className="fw-bold">
+                            {stats.skull_king.total_games > 0 
+                              ? Math.round((stats.skull_king.win_count / stats.skull_king.total_games) * 100) 
+                              : 0}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">총 획득 포인트</div>
+                          <div className="fw-bold text-accent">{stats.skull_king.total_points.toLocaleString()} pts</div>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">평균 포인트</div>
+                          <div className="fw-bold">{stats.skull_king.average_points.toFixed(1)} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Wizard Stats */}
+                <div className="col-md-6">
+                  <div className="p-4 rounded-4 bg-light border border-opacity-10 h-100">
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <div className="d-flex align-items-center">
+                        <span className="fs-4 me-2">🧙</span>
+                        <h6 className="fw-bold mb-0">위자드 (Wizard)</h6>
+                      </div>
+                      <Link to="/wizard/history" className="btn btn-sm btn-outline-primary py-1 px-3" style={{ fontSize: '0.8rem', borderRadius: '20px' }}>
+                        상세 보기
+                      </Link>
+                    </div>
+                    <div className="row g-2 text-center">
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">판수</div>
+                          <div className="fw-bold">{stats.wizard.total_games}</div>
+                        </div>
+                      </div>
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">승리(1등)</div>
+                          <div className="fw-bold text-primary">{stats.wizard.win_count}</div>
+                        </div>
+                      </div>
+                      <div className="col-4">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">승률</div>
+                          <div className="fw-bold">
+                            {stats.wizard.total_games > 0 
+                              ? Math.round((stats.wizard.win_count / stats.wizard.total_games) * 100) 
+                              : 0}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">총 획득 포인트</div>
+                          <div className="fw-bold text-accent">{stats.wizard.total_points.toLocaleString()} pts</div>
+                        </div>
+                      </div>
+                      <div className="col-6">
+                        <div className="p-2 bg-white rounded-3 shadow-sm border">
+                          <div className="small text-muted mb-1">평균 포인트</div>
+                          <div className="fw-bold">{stats.wizard.average_points.toFixed(1)} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span className="text-muted">전적 데이터를 불러오는 중...</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Danger Zone */}

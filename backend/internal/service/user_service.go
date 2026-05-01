@@ -35,3 +35,7 @@ func (s *UserService) UpdateUserByID(id string, updated *dto.UpdateUserInput) (*
 	user, err := s.repo.UpdateUserByID(id, updated)
 	return user, err
 }
+
+func (s *UserService) GetUserStats(userID uint) (*dto.UserStats, error) {
+	return s.repo.GetUserStats(userID)
+}
