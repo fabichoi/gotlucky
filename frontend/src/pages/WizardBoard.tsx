@@ -1,36 +1,42 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchActiveSkullKingGame, createSkullKingGame, joinSkullKingRoom, fetchSkullKingRooms, deleteSkullKingGame } from "../api/gameApi";
+import {
+  fetchActiveWizardGame,
+  createWizardGame,
+  joinWizardRoom,
+  fetchWizardRooms,
+  deleteWizardGame,
+} from "../api/gameApi";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SkullKingModal from "../components/skullking/SkullKingModal";
-import { SkullKingGame } from "../types/skullKing";
+import { WizardGame } from "../types/wizard";
 import {
-  calculatePlayerTotals,
-  getCompletedRounds,
-  getRankColor,
-  getCurrentRound,
-} from "../utils/skullKingUtils";
+  calculateWizardPlayerTotals,
+  getWizardCompletedRounds,
+  getWizardCurrentRound,
+} from "../utils/wizardUtils";
+import { getRankColor } from "../utils/skullKingUtils";
 import RankBadge from "../components/skullking/RankBadge";
 import LotteryBall from "../components/skullking/LotteryBall";
 
-export default function SkullKingBoard() {
+export default function WizardBoard() {
   const navigate = useNavigate();
-  const [game, setGame] = useState<SkullKingGame | null>(null);
+  const [game, setGame] = useState<WizardGame | null>(null);
   const { user: currentUser } = useUser();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const fetchingRef = useRef(false);
 
   const [roomCodeInput, setRoomCodeInput] = useState("");
-  const [waitingRooms, setWaitingRooms] = useState<SkullKingGame[]>([]);
+  const [waitingRooms, setWaitingRooms] = useState<WizardGame[]>([]);
   const [isJoining, setIsJoining] = useState(false);
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [modalConfig, setModalConfig] = useState<{ message: string; title?: string } | null>(null);
   const showAlert = (message: string, title?: string) => setModalConfig({ message, title });
 
   const [showRankPopup, setShowRankPopup] = useState<{ round: number; rank: number; isUp: boolean | null } | null>(null);
-  const prevGameRef = useRef<SkullKingGame | null>(null);
+  const prevGameRef = useRef<WizardGame | null>(null);
 
   const fetchData = async () => {
     if (fetchingRef.current) return;
@@ -38,22 +44,21 @@ export default function SkullKingBoard() {
 
     try {
       const [gameData, roomsData] = await Promise.all([
-        fetchActiveSkullKingGame(),
-        fetchSkullKingRooms(),
+        fetchActiveWizardGame(),
+        fetchWizardRooms(),
       ]);
 
       if (gameData) {
         setGame(gameData);
         setHasError(false);
-        setIsRequestSent(false); // Clear request state if we are in a game
+        setIsRequestSent(false);
       } else {
         setGame(null);
       }
-      
+
       setWaitingRooms(roomsData || []);
     } catch (err: any) {
       console.error("Failed to fetch game:", err);
-      // Don't set error if it's just 404
       if (err.message?.includes("404")) {
         setGame(null);
       } else {
@@ -73,36 +78,46 @@ export default function SkullKingBoard() {
     if (!game || !currentUser) return;
 
     if (prevGameRef.current) {
-      const playerIds = Array.from(new Set(game.scores.map(s => s.user_id)));
+      const playerIds = Array.from(new Set(game.scores.map((s) => s.user_id)));
+      const totalRounds = game.total_rounds || 0;
+      const roundList = Array.from({ length: totalRounds }, (_, i) => i + 1);
 
-      const isRoundFullyCompleted = (g: SkullKingGame, r: number) => {
-        const activeIds = new Set(g.scores.filter(s => s.actual !== -1).map(s => Number(s.user_id)));
-        const scores = g.scores.filter(s => s.round === r && activeIds.has(Number(s.user_id)));
-        return scores.length > 0 && scores.every(s => s.actual !== -1);
+      const isRoundFullyCompleted = (g: WizardGame, r: number) => {
+        const activeIds = new Set(
+          g.scores.filter((s) => s.actual !== -2).map((s) => Number(s.user_id))
+        );
+        const scores = g.scores.filter(
+          (s) => s.round === r && activeIds.has(Number(s.user_id))
+        );
+        return scores.length > 0 && scores.every((s) => s.actual !== -1);
       };
 
-      const prevCompleted = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(r => isRoundFullyCompleted(prevGameRef.current!, r)));
-      const currCompleted = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(r => isRoundFullyCompleted(game, r)));
+      const prevCompleted = new Set(
+        roundList.filter((r) => isRoundFullyCompleted(prevGameRef.current!, r))
+      );
+      const currCompleted = new Set(
+        roundList.filter((r) => isRoundFullyCompleted(game, r))
+      );
 
       for (let r of currCompleted) {
         if (!prevCompleted.has(r)) {
-          const allPlayersTotalAtRound = (g: SkullKingGame, roundLimit: number) => {
-            return playerIds.map(id => {
+          const allPlayersTotalAtRound = (g: WizardGame, roundLimit: number) => {
+            return playerIds.map((id) => {
               const total = g.scores
-                .filter(s => s.user_id === id && s.round <= roundLimit)
+                .filter((s) => s.user_id === id && s.round <= roundLimit)
                 .reduce((sum, s) => sum + s.points, 0);
               return { id, total };
             });
           };
 
           const currentTotals = allPlayersTotalAtRound(game, r);
-          const sortedCurrent = [...currentTotals].map(p => p.total).sort((a, b) => b - a);
-          const myTotal = currentTotals.find(p => p.id === currentUser.id)?.total || 0;
+          const sortedCurrent = [...currentTotals].map((p) => p.total).sort((a, b) => b - a);
+          const myTotal = currentTotals.find((p) => p.id === currentUser.id)?.total || 0;
           const currentRankIndex = sortedCurrent.indexOf(myTotal);
 
           const prevTotals = allPlayersTotalAtRound(prevGameRef.current!, r - 1);
-          const sortedPrev = [...prevTotals].map(p => p.total).sort((a, b) => b - a);
-          const myPrevTotal = prevTotals.find(p => p.id === currentUser.id)?.total || 0;
+          const sortedPrev = [...prevTotals].map((p) => p.total).sort((a, b) => b - a);
+          const myPrevTotal = prevTotals.find((p) => p.id === currentUser.id)?.total || 0;
           const prevRankIndex = sortedPrev.indexOf(myPrevTotal);
 
           let isUp = null;
@@ -130,9 +145,9 @@ export default function SkullKingBoard() {
 
   const handleCreateRoom = async () => {
     try {
-      const newGame = await createSkullKingGame();
+      const newGame = await createWizardGame();
       setGame(newGame);
-      navigate("/skull-king/admin");
+      navigate("/wizard/admin");
     } catch (err) {
       showAlert("방 생성에 실패했습니다.");
     }
@@ -141,7 +156,7 @@ export default function SkullKingBoard() {
   const handleJoinRoom = async (code: string) => {
     setIsJoining(true);
     try {
-      const result = await joinSkullKingRoom(code);
+      const result = await joinWizardRoom(code);
       if (result && result.status === 202) {
         setIsRequestSent(true);
       } else {
@@ -176,9 +191,9 @@ export default function SkullKingBoard() {
     return (
       <div className="container py-5 text-center" style={{ maxWidth: "600px" }}>
         <div className="glass-card p-5">
-          <h2 className="fw-bold mb-4">💀 SKULL KING</h2>
+          <h2 className="fw-bold mb-4">🧙 WIZARD</h2>
           <p className="text-muted mb-5">현재 진행 중인 게임이 없습니다.</p>
-          
+
           <button onClick={handleCreateRoom} className="btn btn-primary w-100 py-3 fw-bold rounded-4 shadow mb-5">
             새 방 만들기 (방장)
           </button>
@@ -186,25 +201,25 @@ export default function SkullKingBoard() {
           <div className="text-start mb-4">
             <label className="fw-bold text-muted small mb-3 px-2">참여 가능한 방 ({waitingRooms.length})</label>
             <div className="d-grid gap-2">
-              {waitingRooms.map(room => (
+              {waitingRooms.map((room) => (
                 <div key={room.id} className="bg-light p-3 rounded-4 d-flex justify-content-between align-items-center shadow-sm border">
                   <div className="text-start">
                     <div className="d-flex align-items-center gap-2 mb-1">
-                      <span className="fw-bold">👑 {room.host?.name || 'Unknown'}의 방</span>
-                      {room.status === 'playing' ? (
-                        <span className="badge bg-success-light text-success border border-success-subtle" style={{fontSize: '0.6rem'}}>진행 중</span>
+                      <span className="fw-bold">👑 {room.host?.name || "Unknown"}의 방</span>
+                      {room.status === "playing" ? (
+                        <span className="badge bg-success-light text-success border border-success-subtle" style={{ fontSize: "0.6rem" }}>진행 중</span>
                       ) : (
-                        <span className="badge bg-warning-light text-warning border border-warning-subtle" style={{fontSize: '0.6rem'}}>대기 중</span>
+                        <span className="badge bg-warning-light text-warning border border-warning-subtle" style={{ fontSize: "0.6rem" }}>대기 중</span>
                       )}
                     </div>
                     <div className="small text-muted">입장 코드: <span className="text-accent fw-bold">{room.room_code}</span></div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleJoinRoom(room.room_code)}
-                    className={`btn btn-sm px-3 py-2 rounded-pill fw-bold ${room.status === 'playing' ? 'btn-outline-primary' : 'btn-accent'}`}
+                    className={`btn btn-sm px-3 py-2 rounded-pill fw-bold ${room.status === "playing" ? "btn-outline-primary" : "btn-accent"}`}
                     disabled={isJoining}
                   >
-                    {room.status === 'playing' ? '참여 요청' : '입장하기'}
+                    {room.status === "playing" ? "참여 요청" : "입장하기"}
                   </button>
                 </div>
               ))}
@@ -265,9 +280,9 @@ export default function SkullKingBoard() {
     );
   }
 
-  if (game.status === 'waiting') {
-    const participants = Array.from(new Set(game.scores.map(s => s.user_id))).map(id => {
-      return game.scores.find(s => s.user_id === id)?.user;
+  if (game.status === "waiting") {
+    const participants = Array.from(new Set(game.scores.map((s) => s.user_id))).map((id) => {
+      return game.scores.find((s) => s.user_id === id)?.user;
     });
 
     return (
@@ -281,7 +296,7 @@ export default function SkullKingBoard() {
           <div className="bg-light rounded-4 p-3 mb-4 text-start">
             <label className="small fw-bold text-muted mb-2 px-2">참여 중인 플레이어 ({participants.length})</label>
             <div className="d-flex flex-wrap gap-2">
-              {participants.map(p => (
+              {participants.map((p) => (
                 <div key={p?.id} className="badge bg-white text-dark border p-2 rounded-3 shadow-sm">
                   👤 {p?.name} {p?.id === game.host_id && <span className="text-accent ms-1">👑</span>}
                 </div>
@@ -291,7 +306,7 @@ export default function SkullKingBoard() {
 
           {game.host_id === currentUser?.id ? (
             <div className="d-flex flex-column gap-2">
-              <Link to="/skull-king/admin" className="btn btn-primary w-100 py-3 fw-bold rounded-4 shadow">
+              <Link to="/wizard/admin" className="btn btn-primary w-100 py-3 fw-bold rounded-4 shadow">
                 게임 관리 화면으로 이동
               </Link>
               <button
@@ -299,7 +314,7 @@ export default function SkullKingBoard() {
                 onClick={async () => {
                   if (!window.confirm("방을 삭제하시겠습니까?")) return;
                   try {
-                    await deleteSkullKingGame(game.id);
+                    await deleteWizardGame(game.id);
                     setGame(null);
                     fetchData();
                   } catch {
@@ -320,22 +335,23 @@ export default function SkullKingBoard() {
     );
   }
 
-  const completedRounds = getCompletedRounds(game.scores);
-  const allPlayersWithScores = calculatePlayerTotals(game.scores, completedRounds);
-  const sortedTotals = [...allPlayersWithScores].map(p => p.total).sort((a, b) => b - a);
-  const currentRound = getCurrentRound(game.scores);
+  const totalRounds = game.total_rounds || 0;
+  const completedRounds = getWizardCompletedRounds(game.scores);
+  const allPlayersWithScores = calculateWizardPlayerTotals(game.scores, completedRounds);
+  const sortedTotals = [...allPlayersWithScores].map((p) => p.total).sort((a, b) => b - a);
+  const currentRound = getWizardCurrentRound(game.scores, totalRounds);
 
-  const myScore = currentUser ? game.scores.find(s => s.round === currentRound && s.user_id === currentUser.id) : null;
-  const otherScores = game.scores.filter(s => s.round === currentRound && (!currentUser || s.user_id !== currentUser.id));
+  const myScore = currentUser ? game.scores.find((s) => s.round === currentRound && s.user_id === currentUser.id) : null;
+  const otherScores = game.scores.filter((s) => s.round === currentRound && (!currentUser || s.user_id !== currentUser.id));
 
   otherScores.sort((a, b) => {
-    const aTotal = allPlayersWithScores.find(p => p.id === a.user_id)?.total || 0;
-    const bTotal = allPlayersWithScores.find(p => p.id === b.user_id)?.total || 0;
+    const aTotal = allPlayersWithScores.find((p) => p.id === a.user_id)?.total || 0;
+    const bTotal = allPlayersWithScores.find((p) => p.id === b.user_id)?.total || 0;
     return bTotal - aTotal;
   });
 
   const renderHistoryItem = (r: number) => {
-    const score = game.scores.find(s => s.round === r && s.user_id === currentUser?.id);
+    const score = game.scores.find((s) => s.round === r && s.user_id === currentUser?.id);
     const isCompleted = score && completedRounds.has(r);
     const points = score ? score.points : 0;
     return (
@@ -344,27 +360,32 @@ export default function SkullKingBoard() {
           <span className="fw-bold text-muted small" style={{ width: "40px" }}>R{r}</span>
         </div>
         <div className="d-flex align-items-center gap-3">
-          <span className="fw-900" style={{ color: isCompleted ? (points > 0 ? '#ef4444' : points < 0 ? '#3b82f6' : 'var(--text-main)') : '#adb5bd', fontSize: "0.95rem" }}>
-            {isCompleted ? (points > 0 ? `+${points}` : points) : '-'}
+          <span className="fw-900" style={{ color: isCompleted ? (points > 0 ? "#ef4444" : points < 0 ? "#3b82f6" : "var(--text-main)") : "#adb5bd", fontSize: "0.95rem" }}>
+            {isCompleted ? (points > 0 ? `+${points}` : points) : "-"}
           </span>
         </div>
       </div>
     );
   };
 
+  // total_rounds 기준 좌/우 분할
+  const halfPoint = Math.ceil(totalRounds / 2);
+  const leftRounds = Array.from({ length: halfPoint }, (_, i) => i + 1);
+  const rightRounds = Array.from({ length: totalRounds - halfPoint }, (_, i) => i + halfPoint + 1);
+
   return (
     <div className="container-fluid py-4 fade-in" style={{ maxWidth: "800px" }}>
       <div className="glass-card p-4 shadow-lg mb-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="fw-bold m-0" style={{ letterSpacing: "-1px" }}>
-            💀 SKULL KING <span className="text-accent">LIVE</span>
+            🧙 WIZARD <span className="text-accent">LIVE</span>
           </h1>
           <div className="badge bg-primary px-3 py-2 fs-6">{currentRound}R {completedRounds.has(currentRound) && "🔒"}</div>
         </div>
 
         {game.host_id === currentUser?.id && (
           <div className="mb-4">
-            <Link to="/skull-king/admin" className="btn btn-outline-accent w-100 py-2 fw-bold">
+            <Link to="/wizard/admin" className="btn btn-outline-accent w-100 py-2 fw-bold">
               🛠️ 게임 관리 (방장 메뉴)
             </Link>
           </div>
@@ -374,27 +395,27 @@ export default function SkullKingBoard() {
           {myScore && currentUser ? (
             <div className="d-flex justify-content-between align-items-center w-100">
               <div className="d-flex flex-column gap-2" style={{ width: "27%" }}>
-                {[1, 2, 3, 4, 5].map(renderHistoryItem)}
+                {leftRounds.map(renderHistoryItem)}
               </div>
 
               <div className="d-flex flex-column align-items-center text-center" style={{ width: "42%", marginTop: "-15px" }}>
-                <div className="mb-3 fw-bold" style={{ color: 'var(--text-main)', fontSize: '1.2rem' }}>나의 예측</div>
+                <div className="mb-3 fw-bold" style={{ color: "var(--text-main)", fontSize: "1.2rem" }}>나의 예측</div>
                 <LotteryBall
                   value={myScore.bid}
                   size="large"
-                  color={getRankColor(allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0, sortedTotals)}
+                  color={getRankColor(allPlayersWithScores.find((p) => p.id === currentUser.id)?.total || 0, sortedTotals)}
                   className="mb-4"
                 />
                 <div className="d-flex align-items-center justify-content-center gap-2 mt-1">
-                  <RankBadge total={allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0} sortedTotals={sortedTotals} />
-                  <div className="fw-bold" style={{ color: getRankColor(allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0, sortedTotals), fontSize: '1.05rem' }}>
-                    {allPlayersWithScores.find(p => p.id === currentUser.id)?.total || 0} pts
+                  <RankBadge total={allPlayersWithScores.find((p) => p.id === currentUser.id)?.total || 0} sortedTotals={sortedTotals} />
+                  <div className="fw-bold" style={{ color: getRankColor(allPlayersWithScores.find((p) => p.id === currentUser.id)?.total || 0, sortedTotals), fontSize: "1.05rem" }}>
+                    {allPlayersWithScores.find((p) => p.id === currentUser.id)?.total || 0} pts
                   </div>
                 </div>
               </div>
 
               <div className="d-flex flex-column gap-2" style={{ width: "27%" }}>
-                {[6, 7, 8, 9, 10].map(renderHistoryItem)}
+                {rightRounds.map(renderHistoryItem)}
               </div>
             </div>
           ) : null}
@@ -405,15 +426,15 @@ export default function SkullKingBoard() {
         <div className="text-center">
           <h5 className="mb-4 text-muted fw-bold">다른 플레이어</h5>
           <div className="row g-3 justify-content-center px-1">
-            {otherScores.map(score => {
-              const player = allPlayersWithScores.find(p => p.id === score.user_id);
+            {otherScores.map((score) => {
+              const player = allPlayersWithScores.find((p) => p.id === score.user_id);
               const rankColor = getRankColor(player?.total || 0, sortedTotals);
 
               return (
                 <div key={score.user_id} className="col-4 d-flex flex-column align-items-center text-center">
                   <div className="mb-2"><RankBadge total={player?.total || 0} sortedTotals={sortedTotals} /></div>
                   <LotteryBall value={score.bid} color={rankColor} className="mb-2" />
-                  <div className="fw-bold text-truncate w-100" style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{player?.name}</div>
+                  <div className="fw-bold text-truncate w-100" style={{ color: "var(--text-main)", fontSize: "0.95rem" }}>{player?.name}</div>
                   <div className="small fw-bold" style={{ color: rankColor }}>{player?.total} pts</div>
                 </div>
               );

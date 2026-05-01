@@ -25,8 +25,13 @@ func (s *LotteryService) Play(userID uint, lotteryType uint) (uint, error) {
 		return 0, err
 	}
 
-	if lastPlayed != nil && time.Since(*lastPlayed) < 24*time.Hour {
-		return 0, errors.New("하루에 한 번만 추첨할 수 있습니다")
+	if lastPlayed != nil {
+		loc, _ := time.LoadLocation("Asia/Seoul")
+		nowKST := time.Now().In(loc)
+		lastKST := lastPlayed.In(loc)
+		if nowKST.Year() == lastKST.Year() && nowKST.YearDay() == lastKST.YearDay() {
+			return 0, errors.New("오늘은 이미 추첨하셨습니다. 자정이 지나면 다시 추첨할 수 있습니다")
+		}
 	}
 
 	user, err := s.userRepo.GetUserById(userID)

@@ -68,5 +68,14 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	skullKingHandler := handler.NewSkullKingHandler(skullKingService)
 	RegisterSkullKingRoutes(api, skullKingHandler)
 
+	wizardService := service.NewWizardService(db)
+	wizardHandler := handler.NewWizardHandler(wizardService)
+	RegisterWizardRoutes(api, wizardHandler)
+
+	ladderRepo := repository.NewLadderRepository(db)
+	ladderService := service.NewLadderService(ladderRepo)
+	ladderHandler := handler.NewLadderHandler(ladderService)
+	RegisterLadderRoutes(api, ladderHandler)
+
 	return r
 }

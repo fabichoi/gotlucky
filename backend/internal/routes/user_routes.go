@@ -12,4 +12,5 @@ func RegisterUserRoutes(rg *gin.RouterGroup, h *handler.UserHandler) {
 	rg.PATCH("/users/:id", h.UpdateUser)
 	rg.DELETE("/users/:id", h.DeleteUser)
 	rg.GET("/me", h.GetMe)
+	rg.GET("/me/stats", h.GetStats)
 }

@@ -82,3 +82,18 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, users)
 }
+
+func (h *UserHandler) GetStats(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in context"})
+		return
+	}
+
+	stats, err := h.service.GetUserStats(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, stats)
+}

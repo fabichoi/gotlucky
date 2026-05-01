@@ -84,3 +84,104 @@ func (r *UserRepository) UpdateUserByID(id string, updated *dto.UpdateUserInput)
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) GetUserStats(userID uint) (*dto.UserStats, error) {
+	var stats dto.UserStats
+
+	// Skull King Stats
+	var skResults []struct {
+		GameID uint
+		UserID uint
+		Total  int
+	}
+	
+	// Get all finished games where the user participated
+	var skGameIDs []uint
+	r.db.Model(&model.SkullKingScore{}).
+		Joins("JOIN skull_king_games ON skull_king_games.id = skull_king_scores.game_id").
+		Where("skull_king_scores.user_id = ? AND skull_king_games.is_active = ?", userID, false).
+		Distinct("skull_king_scores.game_id").
+		Pluck("skull_king_scores.game_id", &skGameIDs)
+
+	if len(skGameIDs) > 0 {
+		stats.SkullKing.TotalGames = len(skGameIDs)
+		
+		r.db.Model(&model.SkullKingScore{}).
+			Select("game_id, user_id, SUM(points) as total").
+			Where("game_id IN ?", skGameIDs).
+			Group("game_id, user_id").
+			Scan(&skResults)
+
+		gameWinners := make(map[uint]uint)
+		gameMaxScore := make(map[uint]int)
+
+		for _, res := range skResults {
+			if currentMax, ok := gameMaxScore[res.GameID]; !ok || res.Total > currentMax {
+				gameMaxScore[res.GameID] = res.Total
+				gameWinners[res.GameID] = res.UserID
+			}
+			if res.UserID == userID {
+				stats.SkullKing.TotalPoints += res.Total
+			}
+		}
+
+		for _, winnerID := range gameWinners {
+			if winnerID == userID {
+				stats.SkullKing.WinCount++
+			}
+		}
+		
+		if stats.SkullKing.TotalGames > 0 {
+			stats.SkullKing.AveragePoints = float64(stats.SkullKing.TotalPoints) / float64(stats.SkullKing.TotalGames)
+		}
+	}
+
+	// Wizard Stats
+	var wizResults []struct {
+		GameID uint
+		UserID uint
+		Total  int
+	}
+	
+	var wizGameIDs []uint
+	r.db.Model(&model.WizardScore{}).
+		Joins("JOIN wizard_games ON wizard_games.id = wizard_scores.game_id").
+		Where("wizard_scores.user_id = ? AND wizard_games.is_active = ?", userID, false).
+		Distinct("wizard_scores.game_id").
+		Pluck("wizard_scores.game_id", &wizGameIDs)
+
+	if len(wizGameIDs) > 0 {
+		stats.Wizard.TotalGames = len(wizGameIDs)
+		
+		r.db.Model(&model.WizardScore{}).
+			Select("game_id, user_id, SUM(points) as total").
+			Where("game_id IN ?", wizGameIDs).
+			Group("game_id, user_id").
+			Scan(&wizResults)
+
+		wizGameWinners := make(map[uint]uint)
+		wizGameMaxScore := make(map[uint]int)
+		
+		for _, res := range wizResults {
+			if currentMax, ok := wizGameMaxScore[res.GameID]; !ok || res.Total > currentMax {
+				wizGameMaxScore[res.GameID] = res.Total
+				wizGameWinners[res.GameID] = res.UserID
+			}
+			if res.UserID == userID {
+				stats.Wizard.TotalPoints += res.Total
+			}
+		}
+
+		for _, winnerID := range wizGameWinners {
+			if winnerID == userID {
+				stats.Wizard.WinCount++
+			}
+		}
+		
+		if stats.Wizard.TotalGames > 0 {
+			stats.Wizard.AveragePoints = float64(stats.Wizard.TotalPoints) / float64(stats.Wizard.TotalGames)
+		}
+	}
+
+	return &stats, nil
+}
