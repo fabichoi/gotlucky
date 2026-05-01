@@ -260,26 +260,16 @@ export default function Profile() {
                       </Link>
                     </div>
                     <div className="row g-2 text-center">
-                      <div className="col-4">
+                      <div className="col-6">
                         <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">판수</div>
-                          <div className="fw-bold">{stats.skull_king.total_games}</div>
+                          <div className="small text-muted mb-1">총 게임 판수</div>
+                          <div className="fw-bold">{stats.skull_king.total_games}판</div>
                         </div>
                       </div>
-                      <div className="col-4">
+                      <div className="col-6">
                         <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">승리(1등)</div>
-                          <div className="fw-bold text-primary">{stats.skull_king.win_count}</div>
-                        </div>
-                      </div>
-                      <div className="col-4">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">승률</div>
-                          <div className="fw-bold">
-                            {stats.skull_king.total_games > 0 
-                              ? Math.round((stats.skull_king.win_count / stats.skull_king.total_games) * 100) 
-                              : 0}%
-                          </div>
+                          <div className="small text-muted mb-1">평균 등수</div>
+                          <div className="fw-bold text-primary">{stats.skull_king.average_rank.toFixed(1)}위</div>
                         </div>
                       </div>
                       <div className="col-6">
@@ -290,7 +280,7 @@ export default function Profile() {
                       </div>
                       <div className="col-6">
                         <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">평균 포인트</div>
+                          <div className="small text-muted mb-1">평균 획득 포인트</div>
                           <div className="fw-bold">{stats.skull_king.average_points.toFixed(1)} pts</div>
                         </div>
                       </div>
@@ -311,40 +301,30 @@ export default function Profile() {
                       </Link>
                     </div>
                     <div className="row g-2 text-center">
-                      <div className="col-4">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">판수</div>
-                          <div className="fw-bold">{stats.wizard.total_games}</div>
-                        </div>
-                      </div>
-                      <div className="col-4">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">승리(1등)</div>
-                          <div className="fw-bold text-primary">{stats.wizard.win_count}</div>
-                        </div>
-                      </div>
-                      <div className="col-4">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">승률</div>
-                          <div className="fw-bold">
-                            {stats.wizard.total_games > 0 
-                              ? Math.round((stats.wizard.win_count / stats.wizard.total_games) * 100) 
-                              : 0}%
-                          </div>
-                        </div>
-                      </div>
                       <div className="col-6">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">총 획득 포인트</div>
-                          <div className="fw-bold text-accent">{stats.wizard.total_points.toLocaleString()} pts</div>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="p-2 bg-white rounded-3 shadow-sm border">
-                          <div className="small text-muted mb-1">평균 포인트</div>
-                          <div className="fw-bold">{stats.wizard.average_points.toFixed(1)} pts</div>
-                        </div>
-                      </div>
+                         <div className="p-2 bg-white rounded-3 shadow-sm border">
+                           <div className="small text-muted mb-1">총 게임 판수</div>
+                           <div className="fw-bold">{stats.wizard.total_games}판</div>
+                         </div>
+                       </div>
+                       <div className="col-6">
+                         <div className="p-2 bg-white rounded-3 shadow-sm border">
+                           <div className="small text-muted mb-1">평균 등수</div>
+                           <div className="fw-bold text-primary">{stats.wizard.average_rank.toFixed(1)}위</div>
+                         </div>
+                       </div>
+                       <div className="col-6">
+                         <div className="p-2 bg-white rounded-3 shadow-sm border">
+                           <div className="small text-muted mb-1">총 획득 포인트</div>
+                           <div className="fw-bold text-accent">{stats.wizard.total_points.toLocaleString()} pts</div>
+                         </div>
+                       </div>
+                       <div className="col-6">
+                         <div className="p-2 bg-white rounded-3 shadow-sm border">
+                           <div className="small text-muted mb-1">평균 획득 포인트</div>
+                           <div className="fw-bold">{stats.wizard.average_points.toFixed(1)} pts</div>
+                         </div>
+                       </div>
                     </div>
                   </div>
                 </div>

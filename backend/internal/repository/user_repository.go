@@ -112,26 +112,34 @@ func (r *UserRepository) GetUserStats(userID uint) (*dto.UserStats, error) {
 			Group("game_id, user_id").
 			Scan(&skResults)
 
-		gameWinners := make(map[uint]uint)
-		gameMaxScore := make(map[uint]int)
+		userScores := make(map[uint]int)
+		gameRanks := make(map[uint]int)
 
 		for _, res := range skResults {
-			if currentMax, ok := gameMaxScore[res.GameID]; !ok || res.Total > currentMax {
-				gameMaxScore[res.GameID] = res.Total
-				gameWinners[res.GameID] = res.UserID
-			}
 			if res.UserID == userID {
+				userScores[res.GameID] = res.Total
 				stats.SkullKing.TotalPoints += res.Total
+				gameRanks[res.GameID] = 1
 			}
 		}
 
-		for _, winnerID := range gameWinners {
-			if winnerID == userID {
-				stats.SkullKing.WinCount++
+		for _, res := range skResults {
+			if res.UserID != userID {
+				if userScore, ok := userScores[res.GameID]; ok {
+					if res.Total > userScore {
+						gameRanks[res.GameID]++
+					}
+				}
 			}
+		}
+
+		totalRank := 0
+		for _, rank := range gameRanks {
+			totalRank += rank
 		}
 		
 		if stats.SkullKing.TotalGames > 0 {
+			stats.SkullKing.AverageRank = float64(totalRank) / float64(stats.SkullKing.TotalGames)
 			stats.SkullKing.AveragePoints = float64(stats.SkullKing.TotalPoints) / float64(stats.SkullKing.TotalGames)
 		}
 	}
@@ -159,26 +167,34 @@ func (r *UserRepository) GetUserStats(userID uint) (*dto.UserStats, error) {
 			Group("game_id, user_id").
 			Scan(&wizResults)
 
-		wizGameWinners := make(map[uint]uint)
-		wizGameMaxScore := make(map[uint]int)
-		
+		userWizScores := make(map[uint]int)
+		gameWizRanks := make(map[uint]int)
+
 		for _, res := range wizResults {
-			if currentMax, ok := wizGameMaxScore[res.GameID]; !ok || res.Total > currentMax {
-				wizGameMaxScore[res.GameID] = res.Total
-				wizGameWinners[res.GameID] = res.UserID
-			}
 			if res.UserID == userID {
+				userWizScores[res.GameID] = res.Total
 				stats.Wizard.TotalPoints += res.Total
+				gameWizRanks[res.GameID] = 1
 			}
 		}
 
-		for _, winnerID := range wizGameWinners {
-			if winnerID == userID {
-				stats.Wizard.WinCount++
+		for _, res := range wizResults {
+			if res.UserID != userID {
+				if userScore, ok := userWizScores[res.GameID]; ok {
+					if res.Total > userScore {
+						gameWizRanks[res.GameID]++
+					}
+				}
 			}
+		}
+
+		totalWizRank := 0
+		for _, rank := range gameWizRanks {
+			totalWizRank += rank
 		}
 		
 		if stats.Wizard.TotalGames > 0 {
+			stats.Wizard.AverageRank = float64(totalWizRank) / float64(stats.Wizard.TotalGames)
 			stats.Wizard.AveragePoints = float64(stats.Wizard.TotalPoints) / float64(stats.Wizard.TotalGames)
 		}
 	}

@@ -1,6 +1,6 @@
 export interface GameStats {
   total_games: number;
-  win_count: number;
+  average_rank: number;
   total_points: number;
   average_points: number;
 }
