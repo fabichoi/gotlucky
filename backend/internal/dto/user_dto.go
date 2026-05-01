@@ -2,7 +2,7 @@ package dto
 
 type GameStats struct {
 	TotalGames    int     `json:"total_games"`
-	WinCount      int     `json:"win_count"`
+	AverageRank   float64 `json:"average_rank"`
 	TotalPoints   int     `json:"total_points"`
 	AveragePoints float64 `json:"average_points"`
 }
